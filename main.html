@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Aduan - Admin</title>
+    <!-- Core styles -->
+    <link rel="stylesheet" href="admin.css">
+    <!-- FontAwesome for icons (Using CDN for simplicity) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-percentage" id="loading-percentage">0%</div>
+            <div class="loading-text">Memproses Pangkalan Data...</div>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header" style="padding: 25px 20px; text-align: center;">
+            <h2 id="sidebar-system-name"
+                style="font-size: 1.1rem; margin: 0; color: white; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                PORTAL ADUAN JKR</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#dashboard" class="active"><i class="fas fa-home"></i> Dashboard</a></li>
+            <li><a href="#senarai-pengadu"><i class="fas fa-list"></i> Senarai Pengadu</a></li>
+            <li><a href="#laporan-admin"><i class="fas fa-chart-bar"></i> Laporan Admin</a></li>
+            <li><a href="#senarai-syarikat"><i class="fas fa-building"></i> Senarai Syarikat</a></li>
+            <li><a href="#senarai-admin"><i class="fas fa-user-shield"></i> Senarai Admin</a></li>
+            <li><a href="#tetapan"><i class="fas fa-cog"></i> Tetapan</a></li>
+            <li><a href="index.html" class="logout"><i class="fas fa-sign-out-alt"></i> Log Keluar</a></li>
+        </ul>
+        <div class="user-profile">
+            <!-- Content injected by JS -->
+            <i class="fas fa-user-circle" style="font-size: 24px;"></i> <span>Admin JKR</span>
+        </div>
+    </nav>
+
+    <!-- Overlay for Mobile Sidebar -->
+    <div class="overlay"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-content">
+        <!-- Top Bar for Mobile -->
+        <header class="top-bar">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="burger-menu"><i class="fas fa-bars"></i></button>
+                <h3>Sistem Aduan Kerosakan</h3>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <div id="header-weather-widget" style="display: flex; align-items: center; gap: 15px;">
+                    <!-- Clock & Date Section -->
+                    <div style="text-align: right; line-height: 1.2;">
+                        <div id="digital-clock" style="font-weight: 800; font-size: 1.5em;">--:-- PM</div>
+                        <div id="current-date" style="font-size: 0.75em; opacity: 0.8;">Sila Tunggu...</div>
+                    </div>
+
+                    <!-- Weather Section -->
+                    <div id="weather-info"
+                        style="display: flex; align-items: center; gap: 8px; background: #ecf0f1; padding: 5px 12px; border-radius: 20px;">
+                        <i id="weather-icon" class="fas fa-cloud-sun" style="font-size: 1.5em; color: #f39c12;"></i>
+                        <span style="font-weight: 600;">Detecting...</span>
+                    </div>
+                </div>
+
+                <!-- Notification Icon -->
+                <div style="position: relative; margin-right: 15px; cursor: pointer;">
+                    <i class="fas fa-bell" style="font-size: 20px; color: #2c3e50;"></i>
+                    <span id="notif-badge"
+                        style="display: none; position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border-radius: 50%; width: 15px; height: 15px; font-size: 10px; text-align: center; line-height: 15px;">0</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Body Content -->
+        <div class="content-body">
+            <!-- 1. Dashboard Section -->
+            <section id="dashboard" class="section active">
+                <h1 class="page-title">Dashboard</h1>
+                <p id="welcome-msg" style="margin-bottom: 25px; color: #7f8c8d; font-size: 1.1rem; font-weight: 500;">
+                    Selamat Datang , Admin JKR</p>
+                <div class="dashboard-cards">
+                    <!-- Card 1: Total Aduan -->
+                    <div class="card">
+                        <h3>Jumlah Aduan</h3>
+                        <p id="total-complaints" style="color: #34495e;">0</p>
+                    </div>
+                    <!-- Card 2: Selesai -->
+                    <div class="card">
+                        <h3>Selesai</h3>
+                        <p id="total-completed" style="color: #2ecc71;">0</p>
+                    </div>
+                    <!-- Card 3: Pending -->
+                    <div class="card">
+                        <h3>Dalam Proses</h3>
+                        <p id="total-process" style="color: #f1c40f;">0</p>
+                    </div>
+                    <!-- Card 4: Lewat -->
+                    <div class="card">
+                        <h3>Lewat</h3>
+                        <p id="total-late" style="color: #e74c3c;">0</p>
+                    </div>
+                    <!-- Card 5: Ditolak -->
+                    <div class="card">
+                        <h3>Ditolak</h3>
+                        <p id="total-rejected" style="color: #c0392b;">0</p>
+                    </div>
+                </div>
+
+                <!-- Notification Section -->
+                <div
+                    style="margin-top: 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <h3><i class="fas fa-bell" style="color: #f39c12;"></i> Notifikasi Terkini</h3>
+                    <ul id="notification-list" style="list-style: none; padding: 0; margin-top: 15px;">
+                        <li style="padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center;">
+                            <span
+                                style="width: 10px; height: 10px; background: #e67e22; border-radius: 50%; margin-right: 10px;"></span>
+                            <span><strong>Aduan #0045/2026</strong> telah melebihi tempoh 3 hari (Lewat).</span>
+                            <small style="margin-left: auto; color: #999;">2 jam lepas</small>
+                        </li>
+                        <li style="padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center;">
+                            <span
+                                style="width: 10px; height: 10px; background: #c0392b; border-radius: 50%; margin-right: 10px;"></span>
+                            <span><strong>Aduan #0048/2026</strong> telah ditolak kerana maklumat tidak lengkap.</span>
+                            <small style="margin-left: auto; color: #999;">5 jam lepas</small>
+                        </li>
+                        <li style="padding: 10px; border-bottom: 1px solid #eee; display: flex; align-items: center;">
+                            <span
+                                style="width: 10px; height: 10px; background: #2ecc71; border-radius: 50%; margin-right: 10px;"></span>
+                            <span><strong>Aduan #0050/2026</strong> baru diterima daripada Ahmad Ali.</span>
+                            <small style="margin-left: auto; color: #999;">1 hari lepas</small>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- 2. Senarai Pengadu Section -->
+            <section id="senarai-pengadu" class="section">
+                <h1 class="page-title">Senarai Pengadu</h1>
+                <p>Senarai semua aduan yang diterima daripada pengguna.</p>
+
+                <!-- Share Link Button -->
+                <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button id="share-link-btn" onclick="shareComplaintLink()"
+                        style="padding: 10px 15px; background-color: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fas fa-share-alt"></i> Kongsi Pautan Aduan
+                    </button>
+                    <button id="qr-code-btn" onclick="generateQRCode()"
+                        style="padding: 10px 15px; background-color: #2c3e50; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; gap: 8px; transition: all 0.2s;">
+                        <i class="fas fa-qrcode"></i> Jana QR Code
+                    </button>
+                </div>
+
+                <!-- QR Code Display Area -->
+                <!-- QR Code Display Area -->
+                <div id="qr-code-container"
+                    style="display: none; margin-bottom: 20px; padding: 15px; background: #fff; border: 1px solid #ddd; border-radius: 8px; width: fit-content; text-align: center;">
+                    <div id="qrcode" style="margin: 0 auto;"></div>
+                    <p style="margin-top: 10px; font-size: 14px; color: #666; text-align: center;">Imbas untuk ke borang
+                        aduan</p>
+                    <div style="display: flex; gap: 5px; margin-top: 10px;">
+                        <button onclick="downloadQRCode()"
+                            style="flex: 1; padding: 5px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                            <i class="fas fa-download"></i> Muat Turun
+                        </button>
+                        <button onclick="closeQRCode()"
+                            style="flex: 1; padding: 5px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer;">Tutup</button>
+                    </div>
+                </div>
+
+                <!-- Toast Notification -->
+                <div id="toast-notification">Pautan aduan telah disalin!</div>
+
+                <!-- Table Container -->
+                <div class="table-responsive" style="overflow-x: auto;">
+                    <table id="senarai-pengadu" style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                        <thead>
+                            <tr style="background-color: #f2f2f2; text-align: left;">
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">No. Aduan</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Nama</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Jabatan</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Keterangan</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh Aduan</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Catatan Admin</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Status</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Kontraktor Dilantik</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Catatan Kontraktor</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh & Masa Terima</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh & Masa Siap</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tempoh Siap</th>
+                            </tr>
+                        </thead>
+                        <tbody id="senarai-pengadu-body">
+                            <!-- Data akan dimuatkan oleh JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 3. Laporan Admin Section -->
+            <section id="laporan-admin" class="section">
+                <h1 class="page-title">Laporan Admin</h1>
+                <p>Jana laporan statistik aduan bulanan dan tahunan.</p>
+                <div style="margin-top: 20px; margin-bottom: 20px;">
+                    <button id="btn-download-pdf" onclick="downloadReportPDF()" class="btn btn-primary"
+                        style="padding: 10px 20px; background-color: #2c3e50; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        <i class="fas fa-file-pdf"></i> Muat Turun PDF
+                    </button>
+                    <button id="btn-export-excel" onclick="exportReportExcel()" class="btn btn-success"
+                        style="padding: 10px 20px; background-color: #27ae60; color: white; border: none; border-radius: 4px; margin-left: 10px; cursor: pointer;">
+                        <i class="fas fa-file-excel"></i> Eksport Excel
+                    </button>
+                </div>
+
+                <!-- Chart Container -->
+                <div
+                    style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 25px;">
+                    <h3 style="margin: 0 0 15px 0; color: #2c3e50;">Statistik Status Aduan</h3>
+                    <div style="height: 300px; position: relative;">
+                        <canvas id="statusChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Report Table Container -->
+                <div id="report-container" class="table-responsive"
+                    style="overflow-x: auto; background: white; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 8px;">
+                    <div style="margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
+                        <h3 style="margin: 0; color: #2c3e50;">Laporan Keseluruhan Aduan</h3>
+                        <p style="margin: 5px 0; color: #7f8c8d; font-size: 0.9rem;">Dijana pada: <span
+                                id="report-date"></span></p>
+                    </div>
+                    <table id="report-table"
+                        style="width: 100%; border-collapse: collapse; min-width: 800px; font-size: 13px;">
+                        <thead>
+                            <tr style="background-color: #f8f9fa; text-align: left; border-bottom: 2px solid #ddd;">
+                                <th style="padding: 12px; color: #2c3e50;">ID Aduan</th>
+                                <th style="padding: 12px; color: #2c3e50;">Tarikh</th>
+                                <th style="padding: 12px; color: #2c3e50;">Pengadu</th>
+                                <th style="padding: 12px; color: #2c3e50;">Lokasi</th>
+                                <th style="padding: 12px; color: #2c3e50;">Kerosakan</th>
+                                <th style="padding: 12px; color: #2c3e50;">Status</th>
+                                <th style="padding: 12px; color: #2c3e50;">Kontraktor</th>
+                                <th style="padding: 12px; color: #2c3e50;">Tempoh Siap</th>
+                            </tr>
+                        </thead>
+                        <tbody id="report-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- 4. Senarai Syarikat Section -->
+            <section id="senarai-syarikat" class="section">
+                <h1 class="page-title">Senarai Syarikat</h1>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <p style="margin: 0;">Pengurusan data kontraktor dan syarikat penyenggaraan.</p>
+                    <button onclick="openRegisterContractorModal()"
+                        style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3);">
+                        <i class="fas fa-plus-circle"></i> Daftar Syarikat Baru
+                    </button>
+                </div>
+
+                <ul id="company-list" style="list-style: none; padding: 0;">
+                    <!-- List populated by JS -->
+                </ul>
+            </section>
+
+            <!-- 5. Senarai Admin Section -->
+            <section id="senarai-admin" class="section">
+                <h1 class="page-title">Senarai Admin</h1>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                    <p style="margin: 0;">Pengurusan akaun pentadbir sistem JKR.</p>
+                    <button onclick="openRegisterAdminModal()"
+                        style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 8px; box-shadow: 0 2px 5px rgba(39, 174, 96, 0.3);">
+                        <i class="fas fa-user-plus"></i> Daftar Admin Baru
+                    </button>
+                </div>
+
+                <ul id="admin-list" style="list-style: none; padding: 0;">
+                    <!-- List populated by JS -->
+                </ul>
+            </section>
+
+
+
+            <!-- 6. Tetapan Section -->
+            <section id="tetapan" class="section">
+                <h1 class="page-title">Tetapan Sistem</h1>
+
+                <div style="display: flex; flex-direction: column; gap: 25px; max-width: 700px;">
+
+                    <!-- Card 1: General Settings -->
+                    <div
+                        style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden;">
+                        <div
+                            style="padding: 15px 20px; background: #2c3e50; color: white; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-cog"></i>
+                            <h3 style="margin: 0; font-size: 1rem;">Tetapan Am</h3>
+                        </div>
+                        <div style="padding: 20px;">
+                            <div style="margin-bottom: 20px;">
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Nama
+                                    Sistem</label>
+                                <input type="text" id="setting-system-name" value="Sistem Aduan Kerosakan JKR"
+                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+                            </div>
+                            <div>
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Saiz
+                                    Tulisan (Font Size)</label>
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <input type="range" id="setting-font-size" min="12" max="20" value="14" step="1"
+                                        style="flex: 1; cursor: pointer;">
+                                    <span id="font-size-value"
+                                        style="font-weight: 700; color: #3498db; min-width: 45px; background: #ebf5fb; padding: 4px 10px; border-radius: 20px; text-align: center;">14px</span>
+                                </div>
+                                <small style="display: block; margin-top: 8px; color: #7f8c8d;">Gunakan slider untuk
+                                    melaraskan saiz teks di seluruh portal.</small>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 2: Notification Settings -->
+                    <div
+                        style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden;">
+                        <div
+                            style="padding: 15px 20px; background: #f39c12; color: white; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-bell"></i>
+                            <h3 style="margin: 0; font-size: 1rem;">Notifikasi</h3>
+                        </div>
+                        <div style="padding: 20px;">
+                            <div style="margin-bottom: 20px;">
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Bunyi
+                                    Notifikasi</label>
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <select id="setting-notif-sound"
+                                        style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+                                        <option value="none">Tiada Bunyi</option>
+                                        <option value="chime" selected>Chime (Default)</option>
+                                        <option value="bell">Bell</option>
+                                        <option value="ding">Ding</option>
+                                        <option value="alert">Alert Tone</option>
+                                        <option value="soft">Soft Notification</option>
+                                    </select>
+                                    <button type="button" id="btn-preview-sound"
+                                        style="padding: 10px 15px; background: #f39c12; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; display: flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                                        <i class="fas fa-play"></i> Dengar
+                                    </button>
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Kelantangan
+                                    (Volume)</label>
+                                <div style="display: flex; align-items: center; gap: 15px;">
+                                    <i class="fas fa-volume-down" style="color: #7f8c8d;"></i>
+                                    <input type="range" id="setting-notif-volume" min="0" max="100" value="70" step="5"
+                                        style="flex: 1; cursor: pointer;">
+                                    <span id="volume-value"
+                                        style="font-weight: 700; color: #f39c12; min-width: 45px; background: #fef9e7; padding: 4px 10px; border-radius: 20px; text-align: center;">70%</span>
+                                    <i class="fas fa-volume-up" style="color: #7f8c8d;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Card 3: Branding / Upload Logo & Background -->
+                    <div
+                        style="background: white; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); overflow: hidden;">
+                        <div
+                            style="padding: 15px 20px; background: #8e44ad; color: white; display: flex; align-items: center; gap: 10px;">
+                            <i class="fas fa-paint-brush"></i>
+                            <h3 style="margin: 0; font-size: 1rem;">Penjenamaan (Logo & Latar Belakang)</h3>
+                        </div>
+                        <div style="padding: 20px;">
+                            <!-- Logo Upload -->
+                            <div style="margin-bottom: 25px;">
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Logo
+                                    Sistem</label>
+                                <small style="display: block; margin-bottom: 10px; color: #7f8c8d;">Logo ini akan
+                                    dipaparkan di halaman log masuk, borang aduan pengguna, dan portal admin.</small>
+                                <div style="display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap;">
+                                    <div id="logo-preview-box"
+                                        style="width: 120px; height: 120px; border: 2px dashed #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8f9fa;">
+                                        <img id="logo-preview" src="" alt="Logo Preview"
+                                            style="max-width: 100%; max-height: 100%; object-fit: contain; display: none;">
+                                        <i id="logo-placeholder" class="fas fa-image"
+                                            style="font-size: 2.5em; color: #ccc;"></i>
+                                    </div>
+                                    <div
+                                        style="display: flex; flex-direction: column; gap: 8px; justify-content: center;">
+                                        <label for="setting-logo-upload"
+                                            style="padding: 10px 18px; background: #8e44ad; color: white; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                                            <i class="fas fa-upload"></i> Pilih Logo
+                                        </label>
+                                        <input type="file" id="setting-logo-upload" accept="image/*"
+                                            style="display: none;">
+                                        <button type="button" id="btn-remove-logo"
+                                            style="padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; display: none;">
+                                            <i class="fas fa-trash"></i> Buang Logo
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Background Upload -->
+                            <div>
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Latar
+                                    Belakang (Background)</label>
+                                <small style="display: block; margin-bottom: 10px; color: #7f8c8d;">Imej ini akan
+                                    menjadi latar belakang halaman log masuk dan borang aduan pengguna.</small>
+                                <div style="display: flex; gap: 15px; align-items: flex-start; flex-wrap: wrap;">
+                                    <div id="bg-preview-box"
+                                        style="width: 200px; height: 120px; border: 2px dashed #ddd; border-radius: 8px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: #f8f9fa;">
+                                        <img id="bg-preview" src="" alt="BG Preview"
+                                            style="width: 100%; height: 100%; object-fit: cover; display: none;">
+                                        <i id="bg-placeholder" class="fas fa-panorama"
+                                            style="font-size: 2.5em; color: #ccc;"></i>
+                                    </div>
+                                    <div
+                                        style="display: flex; flex-direction: column; gap: 8px; justify-content: center;">
+                                        <label for="setting-bg-upload"
+                                            style="padding: 10px 18px; background: #2980b9; color: white; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;">
+                                            <i class="fas fa-upload"></i> Pilih Background
+                                        </label>
+                                        <input type="file" id="setting-bg-upload" accept="image/*"
+                                            style="display: none;">
+                                        <button type="button" id="btn-remove-bg"
+                                            style="padding: 8px 15px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 0.8rem; display: none;">
+                                            <i class="fas fa-trash"></i> Buang Background
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Save Button -->
+                    <button type="button" id="btn-save-settings"
+                        style="padding: 14px 25px; background: linear-gradient(135deg, #2c3e50, #3498db); color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 1rem; width: 100%; transition: all 0.3s; box-shadow: 0 4px 15px rgba(52,152,219,0.3); display: flex; align-items: center; justify-content: center; gap: 10px;">
+                        <i class="fas fa-save"></i> Simpan Semua Tetapan
+                    </button>
+                </div>
+            </section>
+
+        </div> <!-- End of content-body -->
+    </div> <!-- End of main-content -->
+
+    <!-- Scripts -->
+    <!-- PDF Generation Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Chart DataLabels Plugin -->
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
+    <script src="client-api.js"></script>
+    <script src="admin.js"></script>
+
+    <!-- Edit Complaint Modal -->
+    <div id="edit-complaint-modal" class="modal"
+        style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 8px; width: 95%; max-width: 700px; display: flex; flex-direction: column; max-height: 90vh; box-shadow: 0 5px 15px rgba(0,0,0,0.3); overflow: hidden;">
+
+            <!-- Modal Header -->
+            <div
+                style="padding: 15px 20px; border-bottom: 2px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa;">
+                <h3 style="margin:0; color: #2c3e50; font-size: 1.25rem;"><i class="fas fa-edit"></i> Kemaskini
+                    Aduan /
+                    Tugasan</h3>
+                <span onclick="closeEditModal()"
+                    style="font-size: 28px; cursor: pointer; color: #7f8c8d; line-height: 1;">&times;</span>
+            </div>
+
+            <form id="edit-complaint-form" onsubmit="saveComplaintChanges(event)"
+                style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <input type="hidden" id="edit-id">
+
+                <!-- Modal Body (Scrollable) -->
+                <div style="padding: 20px; overflow-y: auto; flex: 1; background: #fafbfc;">
+
+                    <!-- Complaint Details Section -->
+                    <div
+                        style="background-color: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e1e8ed; margin-bottom: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <h4
+                            style="margin-top: 0; margin-bottom: 15px; color: #34495e; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 0.95rem;">
+                            <i class="fas fa-info-circle"></i> Butiran Aduan Asal
+                        </h4>
+
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label
+                                    style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">No.
+                                    Aduan:</label>
+                                <div id="display-id" style="font-weight: 600; color: #2c3e50;">-</div>
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Tarikh
+                                    & Masa:</label>
+                                <div id="display-date" style="font-weight: 600; color: #2c3e50;">-</div>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label
+                                    style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Nama
+                                    Pengadu / Pekerja:</label>
+                                <div style="font-weight: 600; color: #2c3e50;"><span id="display-name">-</span>
+                                    (<span id="display-empid">-</span>)</div>
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Jabatan:</label>
+                                <div id="display-dept" style="font-weight: 600; color: #2c3e50;">-</div>
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">No.
+                                    Telefon:</label>
+                                <div id="display-phone" style="font-weight: 600; color: #2c3e50;">-</div>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label
+                                    style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Emel
+                                    Pengadu:</label>
+                                <div id="display-email" style="font-weight: 600; color: #2c3e50;">-</div>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label
+                                    style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Lokasi
+                                    Kerosakan:</label>
+                                <div id="display-location" style="font-weight: 600; color: #2c3e50;">-</div>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <label
+                                    style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Keterangan
+                                    Kerosakan:</label>
+                                <div id="display-desc"
+                                    style="background: #f8f9fa; padding: 10px; border: 1px solid #ddd; border-radius: 4px; color: #444; margin-top: 5px; font-size: 0.9rem; line-height: 1.4;">
+                                    -</div>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 15px;">
+                            <label
+                                style="font-size: 0.8rem; font-weight: bold; color: #7f8c8d; text-transform: uppercase;">Gambar
+                                Aduan:</label>
+                            <div id="image-gallery-container"
+                                style="margin-top: 8px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; border: 1px dashed #ccc; border-radius: 4px; padding: 10px; background: #fff; min-height: 50px;">
+                                <!-- Images will be injected here -->
+                                <span id="no-image-text"
+                                    style="color: #999; font-style: italic; font-size: 0.85rem;">Tiada gambar dimuat
+                                    naik</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Admin Action Section -->
+                    <div
+                        style="background-color: #fff; padding: 15px; border-radius: 8px; border: 1px solid #e1e8ed; box-shadow: 0 1px 3px rgba(0,0,0,0.05);">
+                        <h4
+                            style="margin-top: 0; margin-bottom: 15px; color: #2980b9; border-bottom: 1px solid #eee; padding-bottom: 8px; font-size: 0.95rem;">
+                            <i class="fas fa-tools"></i> Tindakan Pentadbiran
+                        </h4>
+
+                        <div style="margin-bottom: 15px;">
+                            <label for="edit-status"
+                                style="display: block; font-weight: bold; margin-bottom: 8px; color: #34495e;">Status
+                                Aduan:</label>
+                            <select id="edit-status"
+                                style="width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; background: #fff; font-size: 14px;">
+                                <option value="Baru">Baru</option>
+                                <option value="Aduan Diterima">Aduan Diterima</option>
+                                <option value="Tindakan Kontraktor">Tindakan Kontraktor</option>
+                                <option value="Sedang Dibaiki Oleh Kontraktor">Sedang Dibaiki Oleh Kontraktor
+                                </option>
+                                <option value="Selesai">Selesai</option>
+                                <option value="Ditolak">Ditolak</option>
+                            </select>
+                        </div>
+
+                        <div style="margin-bottom: 15px;">
+                            <label for="edit-notes"
+                                style="display: block; font-weight: bold; margin-bottom: 8px; color: #34495e;">Catatan
+                                Admin:</label>
+                            <textarea id="edit-notes" rows="3"
+                                style="width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 14px; resize: vertical;"
+                                placeholder="Masukkan ulasan atau tindakan yang diambil..."></textarea>
+                        </div>
+
+                        <div
+                            style="background: #ebf5fb; padding: 12px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center;">
+                            <div>
+                                <strong style="font-size: 0.85rem; color: #2980b9;">Pengurusan Kontraktor</strong>
+                                <p style="margin: 3px 0 0 0; font-size: 0.75rem; color: #5dade2;">Lantik atau
+                                    kemaskini
+                                    syarikat penyelenggara.</p>
+                            </div>
+                            <button type="button" id="btn-assign-contractor" onclick="openContractorModal()"
+                                style="background: #3498db; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: 600; display: flex; align-items: center; gap: 8px; transition: 0.2s;">
+                                <i class="fas fa-hard-hat"></i> Lantik Kontraktor
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Modal Footer -->
+                <div
+                    style="padding: 15px 20px; border-top: 1px solid #eee; background: #f8f9fa; text-align: right; display: flex; justify-content: flex-end; gap: 12px;">
+                    <button type="button" onclick="closeEditModal()"
+                        style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Batal</button>
+                    <button type="submit"
+                        style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(39, 174, 96, 0.2);">Simpan
+                        Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Assign Contractor Modal -->
+    <div id="assign-contractor-modal" class="modal"
+        style="display: none; position: fixed; z-index: 2100; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; padding: 25px; border-radius: 8px; width: 90%; max-width: 450px; position: relative; animation: slideDown 0.3s ease-out;">
+            <h2 style="margin-top: 0; color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px;">
+                Lantik
+                Kontraktor</h2>
+
+            <div style="margin-bottom: 15px;">
+                <label for="modal-contractor-select"
+                    style="display: block; font-weight: bold; margin-bottom: 8px; color: #34495e;">Pilih
+                    Syarikat:</label>
+                <select id="modal-contractor-select"
+                    style="width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 14px;">
+                    <option value="">-- Sila Pilih Syarikat --</option>
+                    <option value="Syarikat Maju Jaya">Syarikat Maju Jaya</option>
+                    <option value="Bina Tech Solutions">Bina Tech Solutions</option>
+                    <option value="Global Maintenance">Global Maintenance</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom: 20px;">
+                <label for="modal-task-desc"
+                    style="display: block; font-weight: bold; margin-bottom: 8px; color: #34495e;">Keterangan
+                    Tugasan:</label>
+                <textarea id="modal-task-desc" rows="5"
+                    style="width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; resize: vertical;"
+                    placeholder="Sila nyatakan arahan tugasan kepada kontraktor..."></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button type="button" onclick="closeContractorModal()"
+                    style="flex: 1; padding: 10px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Kembali</button>
+                <button type="button" onclick="confirmAssignment()"
+                    style="flex: 1; padding: 10px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Hantar</button>
+            </div>
+        </div>
+    </div>
+    <!-- View Progress Modal -->
+    <div id="view-progress-modal" class="modal"
+        style="display: none; position: fixed; z-index: 2200; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 8px; width: 90%; max-width: 800px; display: flex; flex-direction: column; max-height: 90vh; box-shadow: 0 4px 15px rgba(0,0,0,0.2); overflow: hidden;">
+
+            <div
+                style="padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #2c3e50; color: white;">
+                <h3 style="margin: 0;">Laporan Perkembangan Kerja (Progress)</h3>
+                <span onclick="closeProgressModal()"
+                    style="font-size: 24px; cursor: pointer; line-height: 1;">&times;</span>
+            </div>
+
+            <div style="padding: 20px; overflow-y: auto; flex: 1; background: #f4f7f6;">
+                <div id="progress-content">
+                    <!-- Progress sections will be injected here -->
+                </div>
+            </div>
+
+            <div style="padding: 15px 20px; border-top: 1px solid #eee; background: #fff; text-align: right;">
+                <button onclick="closeProgressModal()"
+                    style="padding: 8px 20px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Tutup</button>
+            </div>
+        </div>
+    </div>
+    <!-- Registration Modals -->
+
+    <!-- 1. Register Contractor Modal -->
+    <div id="modal-register-contractor" class="modal"
+        style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden; animation: slideDown 0.3s ease-out;">
+            <div
+                style="padding: 20px; background: #3498db; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;"><i class="fas fa-building"></i> Pendaftaran Syarikat Baru</h3>
+                <span onclick="closeRegisterContractorModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <form id="form-register-contractor" style="padding: 25px;">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Nama
+                        Syarikat</label>
+                    <input type="text" id="reg-company-name" placeholder="Contoh: Syarikat Maju Jaya" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Username</label>
+                    <input type="text" id="reg-company-username" placeholder="Contoh: syarikat_maju" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Emel Rasmi
+                        Syarikat</label>
+                    <input type="email" id="reg-company-email" placeholder="syarikat@gmail.com" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tel.
+                            Pejabat</label>
+                        <input type="text" id="reg-company-offphone" placeholder="03-XXXXXXXX" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tel.
+                            Bimbit</label>
+                        <input type="text" id="reg-company-mobile" placeholder="01X-XXXXXXX" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">No.
+                        Pendaftaran Syarikat (SSM)</label>
+                    <input type="text" id="reg-company-ssm" placeholder="Contoh: SSM123456" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Bidang
+                        Teras</label>
+                    <select id="reg-company-scope"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <option value="Penyelenggaraan Am">Penyelenggaraan Am</option>
+                        <option value="Penyelenggaraan Elektrik">Penyelenggaraan Elektrik</option>
+                        <option value="Penyelenggaraan Mekanikal">Penyelenggaraan Mekanikal</option>
+                        <option value="Penyelenggaraan ICT">Penyelenggaraan ICT</option>
+                        <option value="Penyelenggaraan Sivil">Penyelenggaraan Sivil</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tarikh
+                            Mula</label>
+                        <input type="date" id="reg-company-start" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tarikh
+                            Akhir</label>
+                        <input type="date" id="reg-company-end" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Kata Laluan
+                        Sementara</label>
+                    <input type="password" id="reg-company-password" placeholder="••••••••" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="closeRegisterContractorModal()"
+                        style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Batal</button>
+                    <button type="submit"
+                        style="flex: 1; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Daftar
+                        Syarikat</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 2. Register Admin Modal -->
+    <div id="modal-register-admin" class="modal"
+        style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden; animation: slideDown 0.3s ease-out;">
+            <div
+                style="padding: 20px; background: #27ae60; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;"><i class="fas fa-user-plus"></i> Pendaftaran Admin Baru</h3>
+                <span onclick="closeRegisterAdminModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <form id="form-register-admin" style="padding: 25px;">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Nama
+                        Penuh</label>
+                    <input type="text" id="reg-admin-name" placeholder="Contoh: Ahmad Bin Ali" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Username</label>
+                    <input type="text" id="reg-admin-username" placeholder="Contoh: ahmad_jkraduan" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Emel
+                        Rasmi</label>
+                    <input type="email" id="reg-admin-email" placeholder="nama@email.com" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    <small style="color: #666; display: block; margin-top: 5px;">*Gunakan emel rasmi untuk pendaftaran
+                        admin.</small>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Jawatan</label>
+                    <input type="text" id="reg-admin-position" placeholder="Contoh: Jurutera / Penolong Jurutera"
+                        required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tel.
+                            Pejabat</label>
+                        <input type="text" id="reg-admin-offphone" placeholder="03-XXXXXXXX" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tel.
+                            Bimbit (Pilihan)</label>
+                        <input type="text" id="reg-admin-mobile" placeholder="01X-XXXXXXX"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Kata Laluan
+                        Sementara</label>
+                    <input type="password" id="reg-admin-password" placeholder="••••••••" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="closeRegisterAdminModal()"
+                        style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Batal</button>
+                    <button type="submit"
+                        style="flex: 1; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Daftar
+                        Admin</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- 3. Edit Contractor Modal -->
+    <div id="modal-edit-contractor" class="modal"
+        style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 12px; width: 90%; max-width: 500px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden;">
+            <div
+                style="padding: 20px; background: #3498db; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;"><i class="fas fa-edit"></i> Kemaskini Maklumat Syarikat</h3>
+                <span onclick="closeEditContractorModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <form id="form-edit-contractor" style="padding: 25px;">
+                <input type="hidden" id="edit-company-old-reg">
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Nama
+                        Syarikat</label>
+                    <input type="text" id="edit-company-name" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Username</label>
+                    <input type="text" id="edit-company-username" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Emel
+                        Rasmi</label>
+                    <input type="email" id="edit-company-email" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tel.
+                            Pejabat</label>
+                        <input type="text" id="edit-company-offphone" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tel.
+                            Bimbit</label>
+                        <input type="text" id="edit-company-mobile" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">No.
+                        Pendaftaran (SSM)</label>
+                    <input type="text" id="edit-company-ssm" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Bidang
+                        Teras</label>
+                    <select id="edit-company-scope"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                        <option value="Penyelenggaraan Am">Penyelenggaraan Am</option>
+                        <option value="Penyelenggaraan Elektrik">Penyelenggaraan Elektrik</option>
+                        <option value="Penyelenggaraan Mekanikal">Penyelenggaraan Mekanikal</option>
+                        <option value="Penyelenggaraan ICT">Penyelenggaraan ICT</option>
+                        <option value="Penyelenggaraan Sivil">Penyelenggaraan Sivil</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tarikh
+                            Mula</label>
+                        <input type="date" id="edit-company-start" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tarikh
+                            Akhir</label>
+                        <input type="date" id="edit-company-end" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="closeEditContractorModal()"
+                        style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Batal</button>
+                    <button type="submit"
+                        style="flex: 1; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Simpan
+                        Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 4. Edit Admin Modal -->
+    <div id="modal-edit-admin" class="modal"
+        style="display: none; position: fixed; z-index: 3000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden;">
+            <div
+                style="padding: 20px; background: #27ae60; color: white; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;"><i class="fas fa-user-edit"></i> Kemaskini Maklumat Admin</h3>
+                <span onclick="closeEditAdminModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <form id="form-edit-admin" style="padding: 25px;">
+                <input type="hidden" id="edit-admin-old-email">
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Nama
+                        Penuh</label>
+                    <input type="text" id="edit-admin-name" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Username</label>
+                    <input type="text" id="edit-admin-username" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Emel
+                        Rasmi</label>
+                    <input type="email" id="edit-admin-email" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Jawatan</label>
+                    <input type="text" id="edit-admin-position" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+
+                <div style="display: flex; gap: 15px; margin-bottom: 20px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tel.
+                            Pejabat</label>
+                        <input type="text" id="edit-admin-offphone" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tel.
+                            Bimbit</label>
+                        <input type="text" id="edit-admin-mobile"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" onclick="closeEditAdminModal()"
+                        style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Batal</button>
+                    <button type="submit"
+                        style="flex: 1; padding: 12px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Simpan
+                        Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+
+</html>

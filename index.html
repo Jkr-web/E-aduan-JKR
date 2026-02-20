@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Aduan - Log Masuk</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .login-container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+            max-width: 400px;
+            width: 100%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .logo-wrapper {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 25px auto;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            padding: 5px;
+        }
+
+        .logo {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        h2 {
+            margin-bottom: 5px;
+            color: #2c3e50;
+            font-size: 1.6rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            text-transform: uppercase;
+        }
+
+        .system-subtitle {
+            font-size: 0.95rem;
+            color: #7f8c8d;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #eee;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px;
+            cursor: pointer;
+            font-weight: 600;
+            color: #777;
+            transition: all 0.3s;
+        }
+
+        .tab.active {
+            color: #0056b3;
+            border-bottom: 2px solid #0056b3;
+            background-color: #f9f9f9;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #666;
+        }
+
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        button.login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #0056b3;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+            margin-top: 10px;
+        }
+
+        button.login-btn:hover {
+            background-color: #004494;
+        }
+
+        .footer-links {
+            margin-top: 20px;
+            font-size: 14px;
+        }
+
+        .footer-links a {
+            color: #0056b3;
+            text-decoration: none;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="login-container">
+        <!-- Logo Wrapper -->
+        <div class="logo-wrapper">
+            <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="50" cy="50" r="45" fill="#0056b3" />
+                <text x="50" y="55" font-size="20" text-anchor="middle" fill="white" font-family="Arial, sans-serif"
+                    font-weight="bold">JKR</text>
+            </svg>
+        </div>
+
+        <h2>Sistem Aduan Kerosakan</h2>
+        <p class="system-subtitle">Jabatan Kerja Raya (JKR)</p>
+
+        <!-- Tabs -->
+        <div class="tabs">
+            <div id="tab-admin" class="tab active" onclick="switchLogin('admin')">Admin</div>
+            <div id="tab-contractor" class="tab" onclick="switchLogin('contractor')">Syarikat/Kontraktor</div>
+        </div>
+
+        <!-- Admin Login Form -->
+        <form id="admin-login-form" onsubmit="handleLogin(event, 'admin')">
+            <div class="form-group">
+                <label for="admin-email">Emel / ID Pengguna</label>
+                <input type="text" id="admin-email" placeholder="admin@jkr.gov.my" required>
+            </div>
+            <div class="form-group">
+                <label for="admin-password">Kata Laluan</label>
+                <input type="password" id="admin-password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="login-btn">Log Masuk Admin</button>
+        </form>
+
+        <!-- Contractor Login Form -->
+        <form id="contractor-login-form" class="hidden" onsubmit="handleLogin(event, 'contractor')">
+            <div class="form-group">
+                <label for="contractor-id">Emel Syarikat</label>
+                <input type="email" id="contractor-id" placeholder="Contoh: syarikat@gmail.com" required>
+            </div>
+            <div class="form-group">
+                <label for="contractor-password">Kata Laluan</label>
+                <input type="password" id="contractor-password" placeholder="••••••••" required>
+            </div>
+            <button type="submit" class="login-btn" style="background-color: #28a745;">Log Masuk Syarikat</button>
+        </form>
+
+        <div class="footer-links">
+            <p><a href="formuser.html" style="color: #666; font-size: 0.9em;">Pergi ke Borang Aduan Awam</a></p>
+            <p><a href="#">Lupa Kata Laluan?</a></p>
+        </div>
+    </div>
+
+    </div>
+
+    <script src="client-api.js"></script>
+    <script>
+        // Check if already logged in
+        (function () {
+            const userRole = localStorage.getItem('userRole');
+            if (userRole === 'admin') {
+                window.location.href = 'main.html';
+            } else if (userRole === 'contractor') {
+                window.location.href = 'kontraktor.html';
+            }
+        })();
+
+        function switchLogin(type) {
+            const adminForm = document.getElementById('admin-login-form');
+            const contractorForm = document.getElementById('contractor-login-form');
+            const adminTab = document.getElementById('tab-admin');
+            const contractorTab = document.getElementById('tab-contractor');
+
+            if (type === 'admin') {
+                adminForm.classList.remove('hidden');
+                contractorForm.classList.add('hidden');
+                adminTab.classList.add('active');
+                contractorTab.classList.remove('active');
+            } else {
+                adminForm.classList.add('hidden');
+                contractorForm.classList.remove('hidden');
+                adminTab.classList.remove('active');
+                contractorTab.classList.add('active');
+            }
+        }
+
+        function handleLogin(event, type) {
+            event.preventDefault();
+
+            const btn = event.target.querySelector('button');
+            const originalText = btn.textContent;
+
+            const inputs = event.target.querySelectorAll('input');
+            const emailInput = inputs[0].value.trim();
+            const passwordInput = inputs[1].value.trim();
+
+            if (!emailInput || !passwordInput) {
+                alert("Sila isi semua maklumat.");
+                return;
+            }
+
+            btn.textContent = "Memproses...";
+            btn.disabled = true;
+
+            // Artificial delay for feel
+            setTimeout(() => {
+                // Use API for Login Verification
+                API.getAll().then(data => {
+                    if (type === 'admin') {
+                        // Temporary / Master Admin Bypass
+                        if (emailInput === 'admin@jkr.gov.my' && passwordInput === 'admin123') {
+                            localStorage.setItem('userRole', 'admin');
+                            localStorage.setItem('userName', 'Super Admin');
+                            localStorage.setItem('userEmail', 'admin@jkr.gov.my');
+                            window.location.href = 'main.html';
+                            return;
+                        }
+
+                        const admins = data.admins || [];
+                        const foundAdmin = admins.find(a =>
+                            (a.email && a.email.toLowerCase() === emailInput.toLowerCase()) &&
+                            a.password === passwordInput
+                        );
+
+                        if (foundAdmin) {
+                            localStorage.setItem('userRole', 'admin');
+                            localStorage.setItem('userName', foundAdmin.name);
+                            localStorage.setItem('userEmail', foundAdmin.email);
+                            window.location.href = 'main.html';
+                        } else {
+                            alert("Ralat: Emel atau Kata Laluan Admin tidak sah.");
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                        }
+                    } else {
+                        // Contractor Login
+                        const contractors = data.contractors || [];
+                        const foundContractor = contractors.find(c =>
+                            (c.email && c.email.toLowerCase() === emailInput.toLowerCase()) &&
+                            c.password === passwordInput
+                        );
+
+                        if (foundContractor) {
+                            localStorage.setItem('userRole', 'contractor');
+                            localStorage.setItem('userName', foundContractor.name);
+                            localStorage.setItem('contractorEmail', foundContractor.email);
+                            localStorage.setItem('contractorRegNo', foundContractor.regNo);
+                            window.location.href = 'kontraktor.html';
+                        } else {
+                            alert("Ralat: Akaun Syarikat tidak dijumpai atau Kata Laluan salah.");
+                            btn.textContent = originalText;
+                            btn.disabled = false;
+                        }
+                    }
+                }).catch(err => {
+                    console.error("Login Error:", err);
+                    alert("Ralat sambungan ke server. Sila cuba lagi.");
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                });
+            }, 800);
+        }
+    </script>
+
+    <!-- Auto-apply Branding from Settings -->
+    <script>
+        (function applyBranding() {
+            // Apply custom logo
+            const savedLogo = localStorage.getItem('appLogo');
+            if (savedLogo) {
+                const logoEl = document.querySelector('.logo');
+                if (logoEl) {
+                    const img = document.createElement('img');
+                    img.src = savedLogo;
+                    img.className = 'logo'; // Keep the styling
+                    img.alt = 'Logo';
+                    logoEl.replaceWith(img);
+                }
+            }
+
+            // Apply custom background
+            const savedBg = localStorage.getItem('appBackground');
+            if (savedBg) {
+                document.body.style.backgroundImage = `linear-gradient(rgba(244,247,246,0.85), rgba(244,247,246,0.85)), url('${savedBg}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+
+            // Apply custom system name
+            const systemName = localStorage.getItem('systemName');
+            if (systemName) {
+                const h2 = document.querySelector('.login-container h2');
+                if (h2) h2.textContent = systemName;
+            }
+        })();
+    </script>
+
+</body>
+
+</html>

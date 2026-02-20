@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Borang Aduan Kerosakan</title>
+    <link rel="stylesheet" href="formuser.css">
+</head>
+
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay" style="display: none;">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-percentage" id="loading-percentage">0%</div>
+            <div class="loading-text" id="loading-text">Memproses...</div>
+        </div>
+    </div>
+
+    <div id="app-container" class="container">
+        <!-- Form will be injected here by JavaScript -->
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast"></div>
+
+    <script src="client-api.js"></script>
+    <script src="formuser.js"></script>
+</body>
+
+</html>

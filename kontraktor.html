@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Aduan - Portal Kontraktor</title>
+    <!-- Core styles -->
+    <link rel="stylesheet" href="admin.css">
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+</head>
+
+<body>
+
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-percentage" id="loading-percentage">0%</div>
+            <div class="loading-text">Memproses Pangkalan Data...</div>
+        </div>
+    </div>
+
+    <!-- Sidebar Navigation -->
+    <nav class="sidebar">
+        <div class="sidebar-header" style="padding: 25px 20px; text-align: center;">
+            <h2 id="sidebar-system-name"
+                style="font-size: 1.1rem; margin: 0; color: white; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
+                PORTAL KONTRAKTOR</h2>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#dashboard" class="active" onclick="switchTab('dashboard')"><i class="fas fa-home"></i>
+                    Dashboard</a></li>
+            <li><a href="#senarai-tugasan" onclick="switchTab('senarai-tugasan')"><i class="fas fa-tasks"></i> Senarai
+                    Tugasan</a></li>
+            <li><a href="#history" onclick="switchTab('history')"><i class="fas fa-history"></i> Sejarah Tugasan</a>
+            <li><a href="index.html" class="logout"><i class="fas fa-sign-out-alt"></i> Log Keluar</a></li>
+        </ul>
+        <div class="user-profile">
+            <!-- Content injected by JS -->
+            <i class="fas fa-hard-hat"></i> <span>Nama Syarikat</span>
+        </div>
+    </nav>
+
+    <!-- Overlay for Mobile Sidebar -->
+    <div class="overlay"></div>
+
+    <!-- Main Content Wrapper -->
+    <div class="main-content">
+        <!-- Top Bar -->
+        <header class="top-bar"
+            style="display: flex; justify-content: space-between; align-items: center; background: white; padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <div style="display: flex; align-items: center; gap: 15px;">
+                <button class="burger-menu"><i class="fas fa-bars"></i></button>
+                <h3>Panel Kontraktor</h3>
+            </div>
+
+            <div style="display: flex; align-items: center; gap: 15px;">
+
+                <!-- Weather Widget -->
+                <!-- Weather Widget -->
+                <div id="header-weather-widget"
+                    style="margin-right: 20px; display: flex; align-items: center; gap: 15px; color: #2c3e50;">
+                    <!-- Clock & Date Section -->
+                    <div style="text-align: right; line-height: 1.2;">
+                        <div id="digital-clock"
+                            style="font-weight: 800; font-size: 1.8em; color: #2c3e50; font-family: 'Segoe UI', sans-serif;">
+                            --:-- PM</div>
+                        <div id="current-date" style="font-size: 0.85em; color: #7f8c8d; font-weight: 500;">Please
+                            Wait...</div>
+                    </div>
+
+                    <!-- Weather Section -->
+                    <div id="weather-info"
+                        style="display: flex; align-items: center; gap: 8px; background: #ecf0f1; padding: 5px 12px; border-radius: 20px;">
+                        <i id="weather-icon" class="fas fa-cloud-sun" style="font-size: 1.5em; color: #f39c12;"></i>
+                        <span style="font-weight: 600;">Detecting...</span>
+                    </div>
+                </div>
+                <!-- Notification Icon -->
+                <div style="position: relative; margin-right: 15px; cursor: pointer;">
+                    <i class="fas fa-bell" style="font-size: 20px; color: #2c3e50;"></i>
+                    <span id="notif-badge"
+                        style="display: none; position: absolute; top: -5px; right: -5px; background: #e74c3c; color: white; border-radius: 50%; width: 15px; height: 15px; font-size: 10px; text-align: center; line-height: 15px;">0</span>
+                </div>
+                <div class="user-profile">
+                    <i class="fas fa-user-hard-hat" style="font-size: 24px; color: #2c3e50;"></i>
+                </div>
+            </div>
+        </header>
+
+        <!-- 1. Dashboard Section -->
+        <section id="dashboard" class="section active" style="display: block;">
+            <h1 class="page-title">Dashboard Kontraktor</h1>
+            <p id="welcome-msg">Selamat Datang , Nama Syarikat</p>
+
+            <div class="dashboard-cards"
+                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                <!-- Card 1: Tugasan Baru -->
+                <div class="card"
+                    style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <h3>Tugasan Baru</h3>
+                    <p id="stat-new" style="font-size: 2.5em; color: #e67e22; margin: 10px 0;">0</p>
+                    <small>Perlu Tindakan Segera</small>
+                </div>
+                <!-- Card 2: Dalam Proses -->
+                <div class="card"
+                    style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <h3>Dalam Proses</h3>
+                    <p id="stat-progress" style="font-size: 2.5em; color: #3498db; margin: 10px 0;">0</p>
+                    <small>Sedang Dibaiki</small>
+                </div>
+                <!-- Card 3: Selesai -->
+                <div class="card"
+                    style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <h3>Selesai</h3>
+                    <p id="stat-completed" style="font-size: 2.5em; color: #2ecc71; margin: 10px 0;">0</p>
+                    <small>Tugasan Siap</small>
+                </div>
+            </div>
+
+            <!-- Notifikasi Terkini Section -->
+            <div id="notification-section"
+                style="margin-top: 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                <h3><i class="fas fa-bell" style="color: #f39c12;"></i> Notifikasi Terkini</h3>
+                <ul id="notification-list" style="list-style: none; padding: 0; margin-top: 15px;">
+                    <!-- To be populated by JS -->
+                    <li style="padding: 15px; text-align: center; color: #999;">Tiada notifikasi terkini.</li>
+                </ul>
+            </div>
+
+
+        </section>
+
+        <!-- 2. Senarai Tugasan Section -->
+        <section id="senarai-tugasan" class="section" style="display: none;">
+            <h1 class="page-title">Senarai Semua Tugasan</h1>
+            <div id="tasks-container" style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Cards will be populated by JS -->
+                <div
+                    style="padding: 40px; text-align: center; color: #95a5a6; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    Memuatkan tugasan...
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Sejarah Tugasan Section -->
+        <section id="history" class="section" style="display: none;">
+            <div
+                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                <div>
+                    <h1 class="page-title" style="margin: 0;">Sejarah Tugasan</h1>
+                    <p style="color: #7f8c8d; margin-top: 5px;">Rekod semua tugasan yang telah disiapkan.</p>
+                </div>
+
+                <!-- Action Buttons -->
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="printHistory()"
+                        style="padding: 10px 18px; background: #2c3e50; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; transition: all 0.2s;">
+                        <i class="fas fa-print"></i> Cetak Laporan
+                    </button>
+                    <button onclick="downloadHistoryPDF()"
+                        style="padding: 10px 18px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.2); transition: all 0.2s;">
+                        <i class="fas fa-file-pdf"></i> Muat Turun PDF
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div
+                style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap;">
+                <div style="flex: 1; min-width: 150px;">
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Tarikh
+                        Mula</label>
+                    <input type="date" id="filter-date-start"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+                <div style="flex: 1; min-width: 150px;">
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Tarikh
+                        Tamat</label>
+                    <input type="date" id="filter-date-end"
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+                <button onclick="filterHistory()"
+                    style="padding: 11px 25px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                    Tapis Rekod
+                </button>
+                <button onclick="resetHistoryFilter()"
+                    style="padding: 11px 20px; background: #f1f2f6; color: #2c3e50; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                    Reset
+                </button>
+            </div>
+
+            <!-- History Table -->
+            <div class="table-responsive"
+                style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 15px rgba(0,0,0,0.05);">
+                <table style="width: 100%; border-collapse: collapse;">
+                    <thead>
+                        <tr style="background: #f8f9fa; text-align: left;">
+                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">ID Aduan
+                            </th>
+                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Pengadu /
+                                Lokasi</th>
+                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Tarikh Siap
+                            </th>
+                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Tempoh Siap
+                            </th>
+                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Status</th>
+                            <th
+                                style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50; text-align: center;">
+                                Tindakan</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Hidden Print Container -->
+        <div id="print-container" style="display: none;"></div>
+    </div>
+
+    <!-- Update Status Modal -->
+    <div id="update-task-modal" class="modal"
+        style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 8px; width: 90%; max-width: 600px; display: flex; flex-direction: column; max-height: 90vh; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
+
+            <!-- Modal Header -->
+            <div
+                style="padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #f8f9fa;">
+                <h3 style="margin: 0; color: #2c3e50; font-size: 1.2rem;">Kemaskini Tugasan</h3>
+                <span onclick="closeUpdateModal()"
+                    style="font-size: 24px; cursor: pointer; color: #7f8c8d; line-height: 1;">&times;</span>
+            </div>
+
+            <!-- Form wraps Body and Footer -->
+            <form id="update-task-form" onsubmit="submitTaskUpdate(event)"
+                style="display: flex; flex-direction: column; flex: 1; overflow: hidden;">
+                <input type="hidden" id="task-id">
+
+                <!-- Modal Body (Scrollable) -->
+                <div style="padding: 20px; overflow-y: auto; flex: 1;">
+
+                    <!-- Complaint Details (Read Only) -->
+                    <div
+                        style="background: #f8fbff; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9em; border: 1px solid #e1e8ed;">
+                        <h4
+                            style="margin-top: 0; margin-bottom: 10px; color: #34495e; border-bottom: 1px solid #e1e8ed; padding-bottom: 5px;">
+                            Maklumat Aduan</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <strong style="color: #7f8c8d;">No. Aduan:</strong><br>
+                                <span id="modal-display-id" style="font-weight: 500;">-</span>
+                            </div>
+                            <div>
+                                <strong style="color: #7f8c8d;">Tarikh:</strong><br>
+                                <span id="modal-display-date" style="font-weight: 500;">-</span>
+                                <!-- Added Date Field -->
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <strong style="color: #7f8c8d;">Nama Pengadu:</strong><br>
+                                <span id="modal-display-name" style="font-weight: 500;">-</span>
+                            </div>
+                            <div>
+                                <strong style="color: #7f8c8d;">No. Telefon:</strong><br>
+                                <span id="modal-display-phone" style="font-weight: 500;">-</span>
+                            </div>
+                            <div>
+                                <strong style="color: #7f8c8d;">Lokasi:</strong><br>
+                                <span id="modal-display-location" style="font-weight: 500;">-</span>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <strong style="color: #7f8c8d;">Keterangan Masalah:</strong>
+                                <div id="modal-display-desc"
+                                    style="background: white; padding: 8px; border: 1px solid #eee; border-radius: 4px; margin-top: 5px; color: #2c3e50;">
+                                    -</div>
+                            </div>
+                        </div>
+
+                        <div id="modal-image-container" style="margin-top: 15px; display: none;">
+                            <strong style="color: #7f8c8d;">Gambar:</strong><br>
+                            <img id="modal-display-image" src="" alt="Gambar Kerosakan"
+                                style="max-width: 100%; max-height: 200px; width: auto; border-radius: 4px; border: 1px solid #ddd; margin-top: 5px; display: block;">
+                        </div>
+                    </div>
+
+                    <!-- Pegawai Pemberi Tugas (Tanggungjawab Admin) -->
+                    <div id="modal-officer-container"
+                        style="background: #fff9f0; padding: 15px; border-radius: 6px; margin-bottom: 20px; font-size: 0.9em; border: 1px solid #ffeaa7; display: none;">
+                        <h4
+                            style="margin-top: 0; margin-bottom: 10px; color: #d35400; border-bottom: 1px solid #ffeaa7; padding-bottom: 5px;">
+                            Pemberi Tugas Oleh</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div style="grid-column: span 2;">
+                                <strong style="color: #7f8c8d;">Nama Pegawai -</strong><br>
+                                <span id="modal-officer-name" style="font-weight: 600; color: #2c3e50;">-</span>
+                            </div>
+                            <div>
+                                <strong style="color: #7f8c8d;">Jawatan -</strong><br>
+                                <span id="modal-officer-position" style="font-weight: 500;">-</span>
+                            </div>
+                            <div>
+                                <strong style="color: #7f8c8d;">No. Telefon -</strong><br>
+                                <span id="modal-officer-phone" style="font-weight: 500;">-</span>
+                            </div>
+                            <div style="grid-column: span 2;">
+                                <strong style="color: #7f8c8d;">Email -</strong><br>
+                                <span id="modal-officer-email" style="font-weight: 500;">-</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Input Fields -->
+                    <!-- PROGRESS SECTIONS -->
+
+                    <!-- 1. SEBELUM -->
+                    <div
+                        style="margin-bottom: 20px; border: 1px solid #dfe6e9; border-radius: 6px; padding: 15px; background: #fff;">
+                        <h4
+                            style="margin: 0 0 10px 0; color: #e74c3c; border-bottom: 2px solid #e74c3c; display: inline-block; padding-bottom: 3px;">
+                            1. Keadaan Sebelum</h4>
+
+                        <div style="margin-bottom: 10px;">
+                            <label
+                                style="font-size: 0.9em; font-weight: 600; display: block; margin-bottom: 5px;">Gambar
+                                Sebelum:</label>
+
+                            <!-- Hidden Inputs -->
+                            <input type="file" id="file-before" accept="image/*" multiple style="display: none;">
+                            <input type="file" id="camera-before" accept="image/*" capture="environment"
+                                style="display: none;">
+
+                            <!-- Action Buttons -->
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <button type="button" onclick="document.getElementById('file-before').click()"
+                                    style="flex: 1; padding: 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-images"></i> Galeri
+                                </button>
+                                <button type="button" onclick="document.getElementById('camera-before').click()"
+                                    style="flex: 1; padding: 8px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-camera"></i> Kamera
+                                </button>
+                            </div>
+
+                            <!-- Preview Container -->
+                            <div id="preview-before" style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                style="font-size: 0.9em; font-weight: 600; display: block; margin-bottom: 5px;">Catatan
+                                Sebelum:</label>
+                            <textarea id="notes-before" rows="2"
+                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                                placeholder="Catatan keadaan asal..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 2. SEMASA -->
+                    <div
+                        style="margin-bottom: 20px; border: 1px solid #dfe6e9; border-radius: 6px; padding: 15px; background: #fff;">
+                        <h4
+                            style="margin: 0 0 10px 0; color: #3498db; border-bottom: 2px solid #3498db; display: inline-block; padding-bottom: 3px;">
+                            2. Sedang Dibaiki (Semasa)</h4>
+
+                        <div style="margin-bottom: 10px;">
+                            <label
+                                style="font-size: 0.9em; font-weight: 600; display: block; margin-bottom: 5px;">Gambar
+                                Semasa:</label>
+
+                            <!-- Hidden Inputs -->
+                            <input type="file" id="file-during" accept="image/*" multiple style="display: none;">
+                            <input type="file" id="camera-during" accept="image/*" capture="environment"
+                                style="display: none;">
+
+                            <!-- Action Buttons -->
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <button type="button" onclick="document.getElementById('file-during').click()"
+                                    style="flex: 1; padding: 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-images"></i> Galeri
+                                </button>
+                                <button type="button" onclick="document.getElementById('camera-during').click()"
+                                    style="flex: 1; padding: 8px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-camera"></i> Kamera
+                                </button>
+                            </div>
+
+                            <div id="preview-during" style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                style="font-size: 0.9em; font-weight: 600; display: block; margin-bottom: 5px;">Catatan
+                                Semasa:</label>
+                            <textarea id="notes-during" rows="2"
+                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                                placeholder="Catatan kerja pembaikan..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- 3. SELEPAS -->
+                    <div
+                        style="margin-bottom: 20px; border: 1px solid #dfe6e9; border-radius: 6px; padding: 15px; background: #fff;">
+                        <h4
+                            style="margin: 0 0 10px 0; color: #2ecc71; border-bottom: 2px solid #2ecc71; display: inline-block; padding-bottom: 3px;">
+                            3. Selesai (Selepas)</h4>
+
+                        <div style="margin-bottom: 10px;">
+                            <label
+                                style="font-size: 0.9em; font-weight: 600; display: block; margin-bottom: 5px;">Gambar
+                                Selesai (Wajib untuk Siap):</label>
+
+                            <!-- Hidden Inputs -->
+                            <input type="file" id="file-after" accept="image/*" multiple style="display: none;">
+                            <input type="file" id="camera-after" accept="image/*" capture="environment"
+                                style="display: none;">
+
+                            <!-- Action Buttons -->
+                            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                                <button type="button" onclick="document.getElementById('file-after').click()"
+                                    style="flex: 1; padding: 8px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-images"></i> Galeri
+                                </button>
+                                <button type="button" onclick="document.getElementById('camera-after').click()"
+                                    style="flex: 1; padding: 8px; background: #e67e22; color: white; border: none; border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+                                    <i class="fas fa-camera"></i> Kamera
+                                </button>
+                            </div>
+
+                            <div id="preview-after" style="display: flex; gap: 5px; flex-wrap: wrap; margin-top: 5px;">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label
+                                style="font-size: 0.9em; font-weight: 600; display: block; margin-bottom: 5px;">Catatan
+                                Selesai:</label>
+                            <textarea id="notes-after" rows="2"
+                                style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;"
+                                placeholder="Laporan siap..."></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Manual Completion Time -->
+                    <div id="completion-time-container"
+                        style="display: none; margin-bottom: 20px; border: 1px solid #2ecc71; border-radius: 6px; padding: 15px; background: #e8f8f5;">
+                        <h4
+                            style="margin: 0 0 10px 0; color: #27ae60; border-bottom: 2px solid #2ecc71; display: inline-block; padding-bottom: 3px;">
+                            4. Tetapan Masa Siap (Wajib)</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                            <div>
+                                <label
+                                    style="font-size: 0.85em; font-weight: 600; display: block; margin-bottom: 5px;">Tarikh
+                                    Siap:</label>
+                                <input type="date" id="complete-date-manual"
+                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                            <div>
+                                <label
+                                    style="font-size: 0.85em; font-weight: 600; display: block; margin-bottom: 5px;">Masa
+                                    Siap:</label>
+                                <input type="time" id="complete-time-manual"
+                                    style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Modal Footer -->
+                <div
+                    style="padding: 15px 20px; border-top: 1px solid #eee; background: #f8f9fa; text-align: right; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" onclick="closeUpdateModal()"
+                        style="padding: 10px 20px; background: #95a5a6; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 500;">
+                        Batal
+                    </button>
+
+                    <!-- BUTTON: Clock-in (Orange/Yellow) -->
+                    <button id="btn-clock-in" type="button" onclick="submitProgress('clock-in')"
+                        style="display: none; padding: 10px 20px; background: #f1c40f; color: #2c3e50; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(241, 196, 15, 0.2);">
+                        <i class="fas fa-clock"></i> Pesanan Diterima / Mula Kerja
+                    </button>
+
+                    <!-- BUTTON: Kemaskini (Blue) -->
+                    <button id="btn-update-task" type="button" onclick="submitProgress('update')"
+                        style="padding: 10px 20px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(52, 152, 219, 0.2);">
+                        Kemaskini
+                    </button>
+
+                    <!-- BUTTON: Selesai (Green, Black Text) -->
+                    <button id="btn-complete-task" type="button" onclick="submitProgress('complete')"
+                        style="display: none; padding: 10px 20px; background: #2ecc71; color: black; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; box-shadow: 0 2px 4px rgba(46, 204, 113, 0.2);">
+                        <i class="fas fa-check"></i> Selesai
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="client-api.js"></script>
+    <script src="kontraktor.js"></script>
+
+    <!-- Auto-apply Branding from Settings -->
+    <script>
+        (function applyBranding() {
+            // Apply custom logo
+            const savedLogo = localStorage.getItem('appLogo');
+            if (savedLogo) {
+                const logoEl = document.querySelector('.logo');
+                if (logoEl) {
+                    const img = document.createElement('img');
+                    img.src = savedLogo;
+                    img.alt = 'Logo';
+                    img.className = 'logo'; // Keep the styling
+                    img.style.cssText = 'width: 100%; height: 100%; object-fit: contain;';
+                    logoEl.replaceWith(img);
+                }
+            }
+
+            // Apply custom background
+            const savedBg = localStorage.getItem('appBackground');
+            if (savedBg) {
+                document.body.style.backgroundImage = `linear-gradient(rgba(244,247,246,0.85), rgba(244,247,246,0.85)), url('${savedBg}')`;
+                document.body.style.backgroundSize = 'cover';
+                document.body.style.backgroundPosition = 'center';
+                document.body.style.backgroundAttachment = 'fixed';
+            }
+
+            // Apply custom system name
+            const systemName = localStorage.getItem('systemName');
+            if (systemName) {
+                const h2 = document.getElementById('sidebar-system-name');
+                if (h2) h2.textContent = systemName;
+            }
+        })();
+    </script>
+</body>
+
+</html>
