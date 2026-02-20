@@ -199,11 +199,20 @@ const API = {
                 mode: 'cors',
                 body: JSON.stringify(data)
             });
-            const result = await res.json();
-            return result.status === 'success';
+
+            const text = await res.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+                if (result.status === 'success') return true;
+                throw new Error(result.message || "Server returned error status");
+            } catch (e) {
+                console.error("Append Record Response Error. Server returned:", text);
+                throw new Error("Gagal menyimpan rekod. Sila semak Deployment Google Script.");
+            }
         } catch (e) {
             console.error("Append Record Error:", e);
-            return false;
+            throw e;
         }
     }
 };

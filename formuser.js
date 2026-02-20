@@ -257,20 +257,25 @@ window.renderComplaintForm = function (containerId) {
                         if (textEl) textEl.textContent = `Memproses Imej ${i + 1}/${totalFiles}...`;
                         if (percentEl) percentEl.textContent = `${Math.round((i / (totalFiles + 1)) * 100)}%`;
 
-                        // Compress a bit for faster upload but keep high quality
-                        const compressedBase64 = await compressImage(file, 1500, 1500, 0.7);
+                        // Compress a bit more for faster upload and to stay within GAS limits
+                        const compressedBase64 = await compressImage(file, 1200, 1200, 0.6);
 
                         // Update UI to uploading
                         if (textEl) textEl.textContent = `Mengunggah Imej ${i + 1}/${totalFiles}...`;
 
                         // Upload directly to Drive
-                        const driveUrl = await API.uploadFile(`Complaint_${newId}_${i}.jpg`, compressedBase64);
-                        imageLinks.push(driveUrl);
+                        try {
+                            const driveUrl = await API.uploadFile(`Complaint_${newId}_${i}.jpg`, compressedBase64);
+                            imageLinks.push(driveUrl);
+                        } catch (uploadErr) {
+                            console.error("Upload error for file " + i, uploadErr);
+                            throw new Error(`Gagal memuat naik imej ke- ${i + 1}: ${uploadErr.message}`);
+                        }
                     }
                 }
 
                 if (textEl) textEl.textContent = "Menghantar Aduan...";
-                if (percentEl) percentEl.textContent = "90%";
+                if (percentEl) percentEl.textContent = "95%";
 
                 let rawPhone = document.getElementById('no-telefon').value.trim();
                 if (rawPhone && !rawPhone.startsWith('0') && !rawPhone.startsWith('+') && !rawPhone.startsWith('6')) {
@@ -315,7 +320,7 @@ window.renderComplaintForm = function (containerId) {
 
                     resetForm();
                 } else {
-                    throw new Error("API Save Failed");
+                    throw new Error("Gagal menyimpan rekod ke Google Sheets.");
                 }
 
             } catch (err) {
@@ -323,7 +328,7 @@ window.renderComplaintForm = function (containerId) {
                 const overlay = document.getElementById('loading-overlay');
                 if (overlay) overlay.style.display = 'none';
 
-                alert("Ralat: Gagal menghantar aduan. Kemungkinan saiz data terlalu besar atau masalah rangkaian.");
+                alert("Ralat: " + err.message + "\n\nSila pastikan sambungan internet stabil dan saiz gambar tidak terlalu besar.");
                 setLoading(submitBtn, false);
             }
         });
