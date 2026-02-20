@@ -236,12 +236,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 // Show Global Loading Overlay
                 const overlay = document.getElementById('loading-overlay');
                 const percentEl = document.getElementById('loading-percentage');
-                const textEl = document.querySelector('.loading-text');
+                const textEl = document.getElementById('loading-text');
+                const progressContainer = document.getElementById('upload-progress-container');
+                const progressBar = document.getElementById('upload-progress-bar');
 
                 if (overlay) {
                     overlay.style.display = 'flex';
                     if (percentEl) percentEl.textContent = '0%';
                     if (textEl) textEl.textContent = 'Menyediakan Imej...';
+                    if (progressContainer) progressContainer.style.display = 'block';
+                    if (progressBar) progressBar.style.width = '0%';
                 }
 
                 try {
@@ -250,13 +254,20 @@ document.addEventListener('DOMContentLoaded', function () {
                     for (let i = 0; i < totalFiles; i++) {
                         const file = this.files[i];
 
-                        // Update Percent
-                        const percent = Math.round((i / totalFiles) * 100);
-                        if (percentEl) percentEl.textContent = `${percent}%`;
-                        if (textEl) textEl.textContent = `Mengunggah Imej ${i + 1}/${totalFiles}...`;
+                        // Update UI to compression phase
+                        const basePercent = Math.round((i / totalFiles) * 100);
+                        if (percentEl) percentEl.textContent = `${basePercent}%`;
+                        if (textEl) textEl.textContent = `Memproses Imej ${i + 1}/${totalFiles}...`;
+                        if (progressBar) progressBar.style.width = `${basePercent}%`;
 
                         // 1. Compress to HD
                         const compressedBase64 = await compressImage(file, MAX_IMG_WIDTH, MAX_IMG_HEIGHT, IMG_QUALITY);
+
+                        // Progress halfway through this file
+                        const midPercent = Math.round(((i + 0.5) / totalFiles) * 100);
+                        if (percentEl) percentEl.textContent = `${midPercent}%`;
+                        if (progressBar) progressBar.style.width = `${midPercent}%`;
+                        if (textEl) textEl.textContent = `Mengunggah Imej ${i + 1}/${totalFiles}...`;
 
                         // 2. Upload straight to Drive
                         const fileName = `${stage}_${Date.now()}_${i}.jpg`;
@@ -266,6 +277,11 @@ document.addEventListener('DOMContentLoaded', function () {
                     }
 
                     if (percentEl) percentEl.textContent = '100%';
+                    if (progressBar) progressBar.style.width = '100%';
+                    setTimeout(() => {
+                        if (progressContainer) progressContainer.style.display = 'none';
+                        if (progressBar) progressBar.style.width = '0%';
+                    }, 500);
 
                     // Append new images to state (Store URLs, not Base64)
                     if (!currentTaskImages[stage]) currentTaskImages[stage] = [];
@@ -389,10 +405,13 @@ function renderContractorNotifications(tasks) {
         const li = document.createElement('li');
         li.style.cssText = "padding: 12px; border-bottom: 1px solid #eee; display: flex; align-items: center; gap: 15px; animation: fadeIn 0.5s ease;";
         li.innerHTML = `
-            <span style="width: 10px; height: 10px; background: #e67e22; border-radius: 50%; shrink: 0;"></span>
+            <span style="width: 10px; height: 10px; background: #e67e22; border-radius: 50%; flex-shrink: 0;"></span>
             <div style="flex: 1;">
                 <div style="font-size: 0.95em; color: #333;">
                     Tugasan <strong>${displayId}</strong> baru diterima.
+                    <div style="font-size: 0.8em; color: #e67e22; margin-top: 2px;">
+                       Diberi pada: ${formatDisplayDate(task['tarikh lantikan'] || task.assignedDate)}
+                    </div>
                 </div>
                 <div style="font-size: 0.8em; color: #7f8c8d; margin-top: 2px;">
                     <i class="far fa-clock"></i> ${timeAgo}
@@ -494,9 +513,12 @@ function renderTaskTable(tasks) {
                         </p>
                     </div>
                     <div>
-                        <small style="color: #95a5a6; text-transform: uppercase; font-weight: 700; font-size: 10px;">Pegawai Pemberi Tugas</small>
+                        <small style="color: #95a5a6; text-transform: uppercase; font-weight: 700; font-size: 10px;">Pegawai & Tarikh Tugas</small>
                         <p style="margin: 5px 0 0 0; color: #d35400; font-weight: 600; font-size: 0.9rem;">
                             <i class="fas fa-user-tie"></i> ${task.assignedBy ? task.assignedBy.name : (task.adminName || 'Admin JKR')}
+                        </p>
+                        <p style="margin: 2px 0 0 0; color: #2c3e50; font-weight: 700; font-size: 0.85rem;">
+                            <i class="far fa-calendar-alt"></i> Diberi: ${formatDisplayDate(task['tarikh lantikan'] || task.assignedDate)}
                         </p>
                         ${task.assignedBy ? `<small style="color: #666;">${task.assignedBy.position} | ${task.assignedBy.phone}</small>` : '<small style="color: #666;">Maklumat tambahan tidak tersedia</small>'}
                     </div>
@@ -540,7 +562,12 @@ window.clockIn = async function (id) {
 
         if (index !== -1) {
             complaints[index].status = 'Sedang Dibaiki Oleh Kontraktor';
-            complaints[index].dateReceived = new Date().toISOString(); // Record Start Date-Time
+
+            // Format to Human Readable: YYYY-MM-DD HH:MM
+            const now = new Date();
+            const d = now.toLocaleDateString('en-CA');
+            const t = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+            complaints[index].dateReceived = `${d} ${t}`; // Record Start Date-Time
 
             await API.saveAll(data);
 
@@ -601,7 +628,11 @@ window.openUpdateModal = async function (id) {
         // Populate Read-Only Details
         const safeText = (text) => text || '-';
         document.getElementById('modal-display-id').textContent = safeText(complaint.id);
-        document.getElementById('modal-display-date').textContent = `${complaint.date || ''} ${complaint.time || ''}`;
+
+        // Fix Date & Time Format
+        const fullDate = `${complaint.date || ''} ${complaint.time || ''}`.trim();
+        document.getElementById('modal-display-date').textContent = formatDisplayDate(fullDate);
+
         document.getElementById('modal-display-name').textContent = safeText(complaint.name);
         document.getElementById('modal-display-phone').textContent = safeText(complaint.phone);
         document.getElementById('modal-display-location').textContent = safeText(complaint.location);
@@ -625,8 +656,16 @@ window.openUpdateModal = async function (id) {
             document.getElementById('modal-officer-position').textContent = complaint.assignedBy.position || '-';
             document.getElementById('modal-officer-phone').textContent = complaint.assignedBy.phone || '-';
             document.getElementById('modal-officer-email').textContent = complaint.assignedBy.email || '-';
+
+            const assignedDateEl = document.getElementById('modal-assigned-date');
+            if (assignedDateEl) assignedDateEl.textContent = complaint.assignedDate || '-';
         } else {
-            officerContainer.style.display = 'none';
+            const assignedDateEl = document.getElementById('modal-assigned-date');
+            if (assignedDateEl) assignedDateEl.textContent = formatDisplayDate(complaint['tarikh lantikan'] || complaint.assignedDate);
+            officerContainer.style.display = 'block'; // Show anyway if we have assignedDate
+            if (!complaint.assignedBy) {
+                document.getElementById('modal-officer-name').textContent = 'Admin JKR';
+            }
         }
 
         // Initialize Manual Completion Date/Time
@@ -839,9 +878,12 @@ window.submitProgress = async function (action) {
                 const manualTime = document.getElementById('complete-time-manual').value;
 
                 if (manualDate && manualTime) {
-                    complaint.dateCompleted = new Date(`${manualDate}T${manualTime}`).toISOString();
+                    complaint.dateCompleted = `${manualDate} ${manualTime}`;
                 } else {
-                    complaint.dateCompleted = new Date().toISOString();
+                    const now = new Date();
+                    const d = now.toLocaleDateString('en-CA');
+                    const t = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                    complaint.dateCompleted = `${d} ${t}`;
                 }
 
                 // Recalculate duration
@@ -1006,18 +1048,24 @@ window.addEventListener('storage', function (e) {
 async function showLoadingWithProgress(promise) {
     const overlay = document.getElementById('loading-overlay');
     const percentEl = document.getElementById('loading-percentage');
+    const progressBar = document.getElementById('upload-progress-bar');
+    const progressContainer = document.getElementById('upload-progress-container');
+
     if (!overlay || !percentEl) return await promise;
 
     overlay.style.display = 'flex';
     overlay.style.opacity = '1';
     overlay.style.visibility = 'visible';
+    if (progressContainer) progressContainer.style.display = 'block';
 
     let progress = 0;
     const interval = setInterval(() => {
         if (progress < 90) {
             progress += Math.random() * 15; // Fast start
             if (progress > 90) progress = 90;
-            percentEl.textContent = Math.round(progress) + '%';
+            const p = Math.round(progress);
+            percentEl.textContent = p + '%';
+            if (progressBar) progressBar.style.width = p + '%';
         }
     }, 150);
 
@@ -1025,17 +1073,23 @@ async function showLoadingWithProgress(promise) {
         const result = await promise;
         clearInterval(interval);
         percentEl.textContent = '100%';
+        if (progressBar) progressBar.style.width = '100%';
 
         setTimeout(() => {
             overlay.style.opacity = '0';
             overlay.style.visibility = 'hidden';
-            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                if (progressContainer) progressContainer.style.display = 'none';
+                if (progressBar) progressBar.style.width = '0%';
+            }, 500);
         }, 300);
 
         return result;
     } catch (error) {
         clearInterval(interval);
         overlay.style.display = 'none';
+        if (progressContainer) progressContainer.style.display = 'none';
         console.error("Loading error:", error);
         throw error;
     }
@@ -1089,7 +1143,7 @@ function displayHistory(tasks) {
                 <div style="font-weight: 500; color: #2c3e50;">${task.name}</div>
                 <div style="font-size: 0.85em; color: #7f8c8d;"><i class="fas fa-map-marker-alt"></i> ${task.location}</div>
             </td>
-            <td style="padding: 15px; color: #2c3e50;">${completionDate}</td>
+            <td style="padding: 15px; color: #2c3e50;">${formatDisplayDate(task.dateCompleted || task.progress?.after?.timestamp)}</td>
             <td style="padding: 15px; color: #2c3e50;">${duration}</td>
             <td style="padding: 15px;">
                 <span style="padding: 4px 10px; background: #e8f5e9; color: #2e7d32; border-radius: 20px; font-size: 0.8em; font-weight: 600;">SIAP</span>
@@ -1272,3 +1326,41 @@ window.downloadHistoryPDF = function () {
     alert("Sila pilih 'Semat sebagai PDF' (Save as PDF) pada destinasi pencetak anda.");
     printHistory();
 };
+
+/**
+ * HELPER: Format Date and Time for display (Robust version)
+ */
+function formatDisplayDate(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+
+    // Handle concatenated ISO strings (e.g., "ISO1 ISO2")
+    if (typeof dateStr === 'string' && dateStr.includes('T') && dateStr.includes(' ')) {
+        const parts = dateStr.split(' ');
+        if (parts.length >= 2) {
+            try {
+                const datePart = new Date(parts[0]);
+                const timePart = new Date(parts[1]);
+                if (!isNaN(datePart.getTime()) && !isNaN(timePart.getTime())) {
+                    const d = datePart.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const t = timePart.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    return `${d}, ${t}`;
+                }
+            } catch (e) { }
+        }
+    }
+
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+
+        if (dateStr.toString().includes('T') || dateStr.toString().includes('Z') || dateStr.toString().includes(':')) {
+            return date.toLocaleString('ms-MY', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }
+        return dateStr;
+    } catch (e) {
+        return dateStr;
+    }
+}

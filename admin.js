@@ -277,12 +277,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Render Complaint Table
     window.renderComplaintTable = async function (dataToRender = null) {
-        const tableBody = document.querySelector('#senarai-pengadu tbody');
+        const tableBody = document.querySelector('#complaint-table tbody');
         if (!tableBody) return;
 
         // Show Loading State only if we ARE fetching
         if (!dataToRender) {
-            tableBody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 20px;">Memuatkan data...</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="15" style="text-align:center; padding: 20px;">Memuatkan data...</td></tr>';
         }
 
         try {
@@ -303,7 +303,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tableBody.innerHTML = '';
 
             if (complaints.length === 0) {
-                tableBody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 20px;">Tiada aduan direkodkan.</td></tr>';
+                tableBody.innerHTML = '<tr><td colspan="15" style="text-align:center; padding: 20px;">Tiada aduan direkodkan.</td></tr>';
                 return;
             }
 
@@ -332,21 +332,28 @@ document.addEventListener('DOMContentLoaded', () => {
                 trData.style.borderTop = '1px solid #eee';
                 trData.innerHTML = `
                 <td data-label="No. Aduan" style="padding: 12px 10px;"><strong>${c.id}</strong></td>
-                <td data-label="Nama" style="padding: 12px 10px;">${c.name}<br><small style="color:#999">${c.phone}</small></td>
+                <td data-label="Nama" style="padding: 12px 10px;">${c.name}</td>
+                <td data-label="No. Telefon" style="padding: 12px 10px;">${c.phone || '-'}</td>
                 <td data-label="Jabatan" style="padding: 12px 10px;">${c.dept}</td>
-                <td data-label="Keterangan" style="padding: 12px 10px; max-width: 180px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.description || ''}">${(c.description || '').length > 25 ? (c.description || '').substring(0, 25) + '...' : (c.description || '-')}</td>
-                <td data-label="Tarikh Aduan" style="padding: 12px 10px;">${c.date}</td>
-                <td data-label="Catatan Admin" style="padding: 12px 10px; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${c.adminNotes || ''}">${(c.adminNotes || '').length > 15 ? (c.adminNotes || '').substring(0, 15) + '...' : (c.adminNotes || '-')}</td>
+                <td data-label="Keterangan" style="padding: 12px 10px; min-width: 150px; font-size: 0.9rem;" title="${c.description || ''}">${c.description || '-'}</td>
+                <td data-label="Tarikh Aduan" style="padding: 12px 10px;">${formatDisplayDate(c.date)}</td>
+                <td data-label="Catatan Admin" style="padding: 12px 10px; min-width: 120px; font-size: 0.9rem;">${c.adminNotes || '-'}</td>
                 <td data-label="Status" style="padding: 12px 10px;">
                     <span style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${c.status}</span>
                 </td>
                 <td data-label="Kontraktor" style="padding: 12px 10px;">${c.contractor || '-'}</td>
-                <td data-label="Catatan Kontraktor" style="padding: 12px 10px; max-width: 120px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${c.contractorNotes || '-'}</td>
+                <td data-label="No. Rujukan" style="padding: 12px 10px;">
+                    ${c.contractorRefNo ? `<span style="background:#fffde7; border:1px solid #f39c12; color:#b7791f; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; letter-spacing:0.5px;">${c.contractorRefNo}</span>` : '<span style="color:#ccc;">-</span>'}
+                </td>
+                <td data-label="Tarikh Lantikan" style="padding: 12px 10px; font-size: 11px; color: #666;">
+                    ${formatDisplayDate(c['tarikh lantikan'] || c.assignedDate)}
+                </td>
+                <td data-label="Catatan Kontraktor" style="padding: 12px 10px; min-width: 120px;">${c.contractorNotes || '-'}</td>
                 <td data-label="Terima" style="padding: 12px 10px; font-size: 11px; color: #666;">
-                    ${c.dateReceived ? new Date(c.dateReceived).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
+                    ${c.dateReceived ? formatDisplayDate(c.dateReceived) : '-'}
                 </td>
                 <td data-label="Siap" style="padding: 12px 10px; font-size: 11px; color: #666;">
-                    ${c.dateCompleted ? new Date(c.dateCompleted).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
+                    ${c.dateCompleted ? formatDisplayDate(c.dateCompleted) : '-'}
                 </td>
                 <td data-label="Tempoh" style="padding: 12px 10px; font-weight: 600; color: #34495e;">${c.duration || '-'}</td>
             `;
@@ -357,7 +364,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 trAction.style.borderBottom = '2px solid #dfe6e9';
                 trAction.style.backgroundColor = '#fafbfc';
                 trAction.innerHTML = `
-                <td colspan="12" style="padding: 10px 15px;">
+                <td colspan="15" style="padding: 10px 15px;">
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                         
                         <!-- LEFT SIDE: Main Actions -->
@@ -396,7 +403,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         } catch (e) {
             console.error("Error loading complaints:", e);
-            tableBody.innerHTML = '<tr><td colspan="12" style="text-align:center; padding: 20px; color: #e74c3c;">Gagal memuatkan senarai aduan. Sila cuba lagi.</td></tr>';
+            tableBody.innerHTML = '<tr><td colspan="15" style="text-align:center; padding: 20px; color: #e74c3c;">Gagal memuatkan senarai aduan: ' + e.message + '</td></tr>';
         }
     };
 
@@ -434,49 +441,84 @@ document.addEventListener('DOMContentLoaded', () => {
     showLoadingWithProgress(refreshAllData());
 
     // Expose functions globally for onclick events
-    window.openContractorModal = function () {
-        const currentComplaintId = document.getElementById('edit-id').value;
-        const statusValues = document.getElementById('edit-status').value;
+    window.openContractorModal = async function () {
+        const id = document.getElementById('edit-id').value;
+        const statusValue = document.getElementById('edit-status').value;
         const notesValue = document.getElementById('edit-notes').value;
 
-        // Auto-save Status and Notes
-        // Auto-save Status and Notes
-        // For auto-save, we should ideally use API, but for simple status change before modal,
-        // we can assume the modal submit will handle the final save. 
-        // Or we can just update the local cache for now.
-        let complaints = window.allComplaints || [];
-        const index = complaints.findIndex(c => c.id === currentComplaintId);
+        // 1. Show processing state on button
+        const assignBtn = document.getElementById('btn-assign-contractor');
+        const originalBtnHtml = assignBtn.innerHTML;
+        assignBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+        assignBtn.disabled = true;
 
-        if (index !== -1) {
-            complaints[index].status = statusValues;
-            complaints[index].adminNotes = notesValue;
-            complaints[index].status = statusValues;
-            complaints[index].adminNotes = notesValue;
-            // localStorage.setItem('complaints', JSON.stringify(complaints));
+        try {
+            // 2. Fetch current complaint to get the latest object (with mapping keys)
+            const data = await API.getAll();
+            const complaints = data.complaints || [];
+            const index = complaints.findIndex(c => c.id == id);
 
-            // Refresh table to reflect "Aduan Diterima" etc immediately
-            renderComplaintTable();
-        }
+            if (index !== -1) {
+                // Update local object with current form values
+                complaints[index].status = statusValue;
+                complaints[index].adminNotes = notesValue;
 
-        const complaint = complaints[index];
+                // 3. Save Status & Notes to server IMMEDIATELY
+                await API.updateRecord('Aduan', 'id', id, complaints[index]);
+                console.log("Admin notes & status saved before assignment modal.");
 
-        if (complaint) {
-            // Populate Dropdown from localStorage Contractors
-            const contractorSelect = document.getElementById('modal-contractor-select');
-            if (contractorSelect) {
-                const contractors = window.allContractors || [];
-                contractorSelect.innerHTML = '<option value="">-- Sila Pilih Syarikat --</option>';
-                contractors.forEach(c => {
-                    const opt = document.createElement('option');
-                    opt.value = c.name;
-                    opt.textContent = c.name;
-                    contractorSelect.appendChild(opt);
-                });
-                contractorSelect.value = complaint.contractor || '';
+                // Update GLOBAL cache so the table refresh sees it
+                window.allComplaints = complaints;
+
+                // 4. Populate Contractor Modal from the updated list
+                const contractorSelect = document.getElementById('modal-contractor-select');
+                if (contractorSelect) {
+                    const contractors = window.allContractors || [];
+                    contractorSelect.innerHTML = '<option value="">-- Sila Pilih Syarikat --</option>';
+                    contractors.forEach(c => {
+                        const opt = document.createElement('option');
+                        opt.value = c.name;
+                        opt.textContent = c.name;
+                        contractorSelect.appendChild(opt);
+                    });
+                    contractorSelect.value = complaints[index].contractor || '';
+                }
+
+                document.getElementById('modal-task-desc').value = complaints[index].taskDescription || '';
+
+                // ✅ AUTO-GENERATE NO. RUJUKAN (CMD-XXXX/YEAR)
+                const refInput = document.getElementById('modal-contractor-ref');
+                if (refInput) {
+                    if (complaints[index].contractorRefNo) {
+                        // Jika sudah ada, kekalkan yang lama
+                        refInput.value = complaints[index].contractorRefNo;
+                    } else {
+                        // Jana baru berurutan bagi tahun semasa
+                        const year = new Date().getFullYear();
+                        const allComplaints = window.allComplaints || [];
+                        const existingRefs = allComplaints.filter(c =>
+                            c.contractorRefNo && c.contractorRefNo.includes(`/${year}`)
+                        ).length;
+                        const nextNum = (existingRefs + 1).toString().padStart(4, '0');
+                        refInput.value = `CMD-${nextNum}/${year}`;
+                    }
+                    // Jadikan readonly supaya tidak perlu isi manual
+                    refInput.readOnly = true;
+                    refInput.style.backgroundColor = '#f8f9fa';
+                    refInput.style.cursor = 'not-allowed';
+                }
+
+                document.getElementById('assign-contractor-modal').style.display = 'flex';
+
+                // Refresh main table to show "Aduan Diterima" etc
+                renderComplaintTable(window.allComplaints);
             }
-
-            document.getElementById('modal-task-desc').value = complaint.taskDescription || '';
-            document.getElementById('assign-contractor-modal').style.display = 'flex';
+        } catch (e) {
+            console.error("Error saving notes before assignment:", e);
+            alert("Ralat: Tidak dapat menyimpan catatan. Sila cuba lagi.");
+        } finally {
+            assignBtn.innerHTML = originalBtnHtml;
+            assignBtn.disabled = false;
         }
     }
 
@@ -484,12 +526,12 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('assign-contractor-modal').style.display = 'none';
     }
 
-    // Confirm Assignment - Real Async
     window.confirmAssignment = async function () {
         // Collect Data
         const id = document.getElementById('edit-id').value;
         const contractor = document.getElementById('modal-contractor-select').value;
         const taskDesc = document.getElementById('modal-task-desc').value;
+        const contractorRefNo = (document.getElementById('modal-contractor-ref')?.value || '').trim();
 
         if (!contractor) {
             alert("Sila pilih syarikat kontraktor.");
@@ -531,7 +573,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 complaints[index].contractor = contractor;
                 complaints[index].taskDescription = taskDesc;
+                complaints[index].contractorRefNo = contractorRefNo; // ✅ SAVE CONTRACTOR REF NO
                 complaints[index].status = 'Tindakan Kontraktor'; // Update Status
+
+                // Record Assignment Date & Time
+                const now = new Date();
+                const d = now.toLocaleDateString('en-CA'); // YYYY-MM-DD
+                const t = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+                const assignedTimestamp = `${d} ${t}`;
+
+                complaints[index].assignedDate = assignedTimestamp;
+                complaints[index]['tarikh lantikan'] = assignedTimestamp; // Map to GS Header
 
                 // Save back to API (Using updateRecord for efficiency)
                 await API.updateRecord('Aduan', 'id', id, complaints[index]);
@@ -556,20 +608,20 @@ document.addEventListener('DOMContentLoaded', () => {
                     updateBy: 'Admin'
                 });
 
-                // Show toast
-                const toast = document.getElementById('toast-notification');
-                if (toast) {
-                    toast.textContent = `Berjaya: Status ditukar kepada Tindakan Kontraktor`;
-                    toast.classList.add('show');
-                    setTimeout(() => toast.classList.remove('show'), 3000);
-                }
-
                 // Close Modals
-                closeContractorModal(); // Close the contractor assignment modal
-                closeEditModal(); // Close the main edit modal
+                closeContractorModal();
+                closeEditModal();
 
                 // Refresh Table
-                await refreshAllData(); // Use centralized refresh
+                await refreshAllData();
+
+                // ✅ Show Success Animation
+                showSuccessModal(
+                    'Berjaya Dihantar!',
+                    `Aduan <strong>${id}</strong> telah berjaya dihantar kepada <strong>${contractor}</strong>.`,
+                    contractorRefNo
+                );
+
             } else {
                 alert("Aduan tidak dijumpai.");
             }
@@ -724,15 +776,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 window.allComplaints = complaints;
 
                 closeEditModal();
-                await refreshAllData(); // Fetch fresh to be sure
+                await refreshAllData();
 
-                // Show Success Toast
-                const toast = document.getElementById('toast-notification');
-                if (toast) {
-                    toast.textContent = `Aduan ${id} telah dikemaskini.`;
-                    toast.classList.add('show');
-                    setTimeout(() => toast.classList.remove('show'), 3000);
-                }
+                // ✅ Show Success Animation
+                showSuccessModal(
+                    'Berjaya Dikemaskini!',
+                    `Aduan <strong>${id}</strong> telah berjaya dikemaskini.<br><small style="color:#9ca3af;">Status: ${newStatus}</small>`
+                );
             }
         } catch (err) {
             console.error(err);
@@ -748,32 +798,23 @@ document.addEventListener('DOMContentLoaded', () => {
     // 4. Delete Complaint
     window.deleteComplaint = async function (id) {
         if (!id) return;
-        if (!confirm("Adakah anda pasti mahu memadam aduan ini?")) return;
 
-        try {
-            console.log("Membuang aduan ID:", id);
-            const data = await API.getAll();
-            let complaints = (data.complaints || []).filter(c => c.id !== id);
-
-            if (complaints.length < (data.complaints || []).length) {
-                data.complaints = complaints;
-                const success = await API.saveAll(data);
+        if (confirm("Adakah anda pasti mahu memadam aduan ini?")) {
+            try {
+                const success = await API.deleteRecord('Aduan', 'id', id);
 
                 if (success) {
                     await refreshAllData();
-                    const toast = document.getElementById('toast-notification');
-                    if (toast) {
-                        toast.textContent = `Aduan ${id} telah dipadam.`;
-                        toast.classList.add('show');
-                        setTimeout(() => toast.classList.remove('show'), 3000);
-                    }
+                    // ✅ Show Premium Success Animation
+                    showSuccessModal(
+                        'Aduan Dipadam!',
+                        `Aduan <strong>${id}</strong> telah berjaya dipadam daripada sistem.`
+                    );
                 }
-            } else {
-                alert("Aduan tidak dijumpai dalam pengkalan data.");
+            } catch (e) {
+                console.error("Delete Aduan Error:", e);
+                alert("Ralat memadam aduan: " + e.message);
             }
-        } catch (e) {
-            console.error("Delete Aduan Error:", e);
-            alert("Ralat memadam aduan: " + e.message);
         }
     };
 
@@ -1084,21 +1125,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             console.log("Memadam admin:", email);
-            const data = await API.getAll();
-            let admins = (data.admins || []).filter(a => a.email !== email);
+            const success = await API.deleteRecord('Admin', 'email', email);
 
-            if (admins.length < (data.admins || []).length) {
-                data.admins = admins;
-                const success = await API.saveAll(data);
-
-                if (success) {
-                    // Update cache and re-render
-                    window.allAdmins = admins;
-                    renderAdminList();
-                    alert("Akaun admin telah dipadam.");
-                }
-            } else {
-                alert("Admin tidak dijumpai.");
+            if (success) {
+                // Refresh list
+                renderAdminList();
+                alert("Akaun admin telah dipadam.");
             }
         } catch (e) {
             console.error("Delete Admin Error:", e);
@@ -1233,23 +1265,11 @@ document.addEventListener('DOMContentLoaded', () => {
     window.deleteContractor = async function (regNo) {
         if (confirm("Adakah anda pasti mahu memadam kontraktor ini dari senarai?")) {
             try {
-                const data = await API.getAll();
-                let contractors = data.contractors || [];
-                const initialLength = contractors.length;
+                const success = await API.deleteRecord('Kontraktor', 'regNo', regNo);
 
-                contractors = contractors.filter(c => c.regNo !== regNo);
-
-                if (contractors.length < initialLength) {
-                    data.contractors = contractors;
-                    await API.saveAll(data);
-
-                    // Sync local
-                    localStorage.setItem('contractors', JSON.stringify(contractors));
-
+                if (success) {
                     renderContractorList();
                     alert("Kontraktor berjaya dipadam.");
-                } else {
-                    alert("Kontraktor tidak dijumpai.");
                 }
             } catch (e) {
                 console.error(e);
@@ -2150,15 +2170,13 @@ applyGlobalBranding();
                     settings.appBackground = window.allSettings.appBackground;
                 }
 
-                // Save via API
-                // We must fetch full data structure to save back
-                const data = await API.getAll();
-                data.settings = settings;
+                // Save via API specifically
+                const success = await API.updateSettings(settings);
+
+                if (!success) throw new Error("Gagal simpan ke pelayan.");
 
                 // Optimistic update for cache
                 window.allSettings = settings;
-
-                await API.saveAll(data);
 
                 // Apply font size
                 document.body.style.fontSize = settings.fontSize + 'px';
@@ -2553,18 +2571,24 @@ window.renderStatusChart = function (complaints) {
 async function showLoadingWithProgress(promise) {
     const overlay = document.getElementById('loading-overlay');
     const percentEl = document.getElementById('loading-percentage');
+    const progressBar = document.getElementById('upload-progress-bar');
+    const progressContainer = document.getElementById('upload-progress-container');
+
     if (!overlay || !percentEl) return await promise;
 
     overlay.style.display = 'flex';
     overlay.style.opacity = '1';
     overlay.style.visibility = 'visible';
+    if (progressContainer) progressContainer.style.display = 'block';
 
     let progress = 0;
     const interval = setInterval(() => {
         if (progress < 90) {
             progress += Math.random() * 15; // Fast start
             if (progress > 90) progress = 90;
-            percentEl.textContent = Math.round(progress) + '%';
+            const p = Math.round(progress);
+            percentEl.textContent = p + '%';
+            if (progressBar) progressBar.style.width = p + '%';
         }
     }, 150);
 
@@ -2572,18 +2596,110 @@ async function showLoadingWithProgress(promise) {
         const result = await promise;
         clearInterval(interval);
         percentEl.textContent = '100%';
+        if (progressBar) progressBar.style.width = '100%';
 
         setTimeout(() => {
             overlay.style.opacity = '0';
             overlay.style.visibility = 'hidden';
-            setTimeout(() => { overlay.style.display = 'none'; }, 500);
+            setTimeout(() => {
+                overlay.style.display = 'none';
+                if (progressContainer) progressContainer.style.display = 'none';
+                if (progressBar) progressBar.style.width = '0%';
+            }, 500);
         }, 300);
 
         return result;
     } catch (error) {
         clearInterval(interval);
         overlay.style.display = 'none';
+        if (progressContainer) progressContainer.style.display = 'none';
         console.error("Loading error:", error);
         throw error;
     }
+}
+
+/**
+ * HELPER: Format Date and Time for display (Robust version)
+ */
+function formatDisplayDate(dateStr) {
+    if (!dateStr || dateStr === '-') return '-';
+
+    // Handle concatenated ISO strings (e.g., "ISO1 ISO2")
+    if (typeof dateStr === 'string' && dateStr.includes('T') && dateStr.includes(' ')) {
+        const parts = dateStr.split(' ');
+        if (parts.length >= 2) {
+            try {
+                const datePart = new Date(parts[0]);
+                const timePart = new Date(parts[1]);
+                if (!isNaN(datePart.getTime()) && !isNaN(timePart.getTime())) {
+                    const d = datePart.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    const t = timePart.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+                    return `${d}, ${t}`;
+                }
+            } catch (e) { }
+        }
+    }
+
+    try {
+        const date = new Date(dateStr);
+        if (isNaN(date.getTime())) return dateStr;
+
+        if (dateStr.toString().includes('T') || dateStr.toString().includes('Z') || dateStr.toString().includes(':')) {
+            return date.toLocaleString('ms-MY', {
+                day: '2-digit', month: '2-digit', year: 'numeric',
+                hour: '2-digit', minute: '2-digit', hour12: true
+            });
+        }
+        return dateStr;
+    } catch (e) {
+        return dateStr;
+    }
+}
+
+// ===== SUCCESS ANIMATION HELPERS =====
+/**
+ * Show the animated success modal
+ * @param {string} title - Title text
+ * @param {string} message - HTML message body
+ * @param {string} refNo - Optional contractor reference number to highlight
+ */
+function showSuccessModal(title, message, refNo = '') {
+    const modal = document.getElementById('success-animate-modal');
+    const titleEl = document.getElementById('success-title');
+    const msgEl = document.getElementById('success-message');
+    const badge = document.getElementById('success-badge');
+    const refEl = document.getElementById('success-ref-no');
+    const card = document.getElementById('success-animate-card');
+
+    if (!modal) return;
+
+    if (titleEl) titleEl.textContent = title;
+    if (msgEl) msgEl.innerHTML = message;
+
+    // Show or hide ref number badge
+    if (refNo && badge && refEl) {
+        refEl.textContent = refNo;
+        badge.style.display = 'block';
+    } else if (badge) {
+        badge.style.display = 'none';
+    }
+
+    // Re-trigger animation by cloning card
+    if (card) {
+        card.style.animation = 'none';
+        card.offsetHeight; // force reflow
+        card.style.animation = 'successPop 0.5s cubic-bezier(0.34,1.56,0.64,1)';
+    }
+
+    modal.style.display = 'flex';
+    // Auto-close after 6s
+    setTimeout(() => closeSuccessModal(), 6000);
+}
+
+/**
+ * Close the success animation modal
+ */
+function closeSuccessModal() {
+    const modal = document.getElementById('success-animate-modal');
+    if (modal) modal.style.display = 'none';
 }

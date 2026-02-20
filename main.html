@@ -18,7 +18,10 @@
         <div class="loading-content">
             <div class="loading-spinner"></div>
             <div class="loading-percentage" id="loading-percentage">0%</div>
-            <div class="loading-text">Memproses Pangkalan Data...</div>
+            <div class="loading-text" id="loading-text">Memproses Pangkalan Data...</div>
+            <div id="upload-progress-container" class="upload-progress-container">
+                <div id="upload-progress-bar" class="upload-progress-bar"></div>
+            </div>
         </div>
     </div>
 
@@ -180,19 +183,56 @@
                 <!-- Toast Notification -->
                 <div id="toast-notification">Pautan aduan telah disalin!</div>
 
+                <!-- Success Animation Modal -->
+                <div id="success-animate-modal"
+                    style="display:none; position:fixed; z-index:9999; inset:0; background:rgba(15,23,42,0.7); backdrop-filter:blur(8px); justify-content:center; align-items:center;">
+                    <div id="success-animate-card"
+                        style="background:#fff; border-radius:20px; padding:40px 50px; text-align:center; max-width:380px; width:90%; box-shadow:0 20px 60px rgba(0,0,0,0.3); animation:successPop 0.5s cubic-bezier(0.34,1.56,0.64,1);">
+                        <div id="success-icon-wrap"
+                            style="width:90px; height:90px; background:linear-gradient(135deg,#2ecc71,#27ae60); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 20px; box-shadow:0 8px 25px rgba(46,204,113,0.4);">
+                            <svg width="45" height="45" viewBox="0 0 24 24" fill="none" stroke="white"
+                                stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+                        <h2 id="success-title"
+                            style="margin:0 0 8px; color:#1a202c; font-size:1.4rem; font-weight:800;">Berjaya!</h2>
+                        <p id="success-message"
+                            style="margin:0 0 20px; color:#606977; font-size:0.95rem; line-height:1.5;">Aduan telah
+                            berjaya dikemaskini.</p>
+                        <div id="success-badge"
+                            style="display:none; background:#ebf8f2; border:1px solid #a7f3d0; border-radius:10px; padding:10px 16px; margin-bottom:20px;">
+                            <div
+                                style="font-size:0.75rem; color:#6b7280; font-weight:600; text-transform:uppercase; letter-spacing:1px;">
+                                No. Aduan Kontraktor</div>
+                            <div id="success-ref-no"
+                                style="font-size:1.3rem; font-weight:900; color:#065f46; margin-top:4px; letter-spacing:1px;">
+                                -</div>
+                        </div>
+                        <button onclick="closeSuccessModal()"
+                            style="background:linear-gradient(135deg,#3498db,#2980b9); color:white; border:none; padding:12px 35px; border-radius:50px; cursor:pointer; font-weight:700; font-size:0.95rem; box-shadow:0 4px 15px rgba(52,152,219,0.4); transition:transform 0.2s;"
+                            onmouseover="this.style.transform='scale(1.05)'"
+                            onmouseout="this.style.transform='scale(1)'">OK</button>
+                    </div>
+                </div>
+
                 <!-- Table Container -->
-                <div class="table-responsive" style="overflow-x: auto;">
-                    <table id="senarai-pengadu" style="width: 100%; border-collapse: collapse; min-width: 600px;">
+                <div class="table-responsive">
+                    <table id="complaint-table" style="width: 100%; border-collapse: collapse;">
                         <thead>
                             <tr style="background-color: #f2f2f2; text-align: left;">
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">No. Aduan</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Nama</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">No. Telefon</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Jabatan</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Keterangan</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh Aduan</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Catatan Admin</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Status</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Kontraktor Dilantik</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd; background:#fffde7;">No.
+                                    Rujukan</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh Lantikan</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Catatan Kontraktor</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh & Masa Terima</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh & Masa Siap</th>
@@ -651,6 +691,15 @@
                 </select>
             </div>
 
+            <div style="margin-bottom: 15px;">
+                <label for="modal-contractor-ref"
+                    style="display: block; font-weight: bold; margin-bottom: 8px; color: #34495e;">
+                    <i class="fas fa-hashtag" style="color:#f39c12;"></i> No. Rujukan Kontraktor (Contoh:
+                    CMD-XXXX/2026)</label>
+                <input type="text" id="modal-contractor-ref"
+                    style="width: 100%; padding: 10px; border: 1px solid #bdc3c7; border-radius: 4px; font-size: 14px;"
+                    placeholder="Masukkan no. rujukan daripada kontraktor...">
+            </div>
             <div style="margin-bottom: 20px;">
                 <label for="modal-task-desc"
                     style="display: block; font-weight: bold; margin-bottom: 8px; color: #34495e;">Keterangan

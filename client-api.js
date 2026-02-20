@@ -1,8 +1,8 @@
 // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-const API_URL = 'https://script.google.com/macros/s/AKfycbxCb71-QaHsr1lQAoThus3aUq79YLMcxt0w1BSRcpn0YltoUF734rJBPduD_wu59_IM/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbwQh1iH1hj9zJycGqHLMlu3uvXo2k5AN_UFSFlLxilTr66AjTh8a5lvQFyreryHsbBu/exec';
 
 // --- TOKEN KESELAMATAN (Mesti sama dengan di Google Apps Script) ---
-const AUTH_TOKEN = "RAHSIA_JKR_2026_SECURE";
+const AUTH_TOKEN = "https://github.com/Jkr-web/E-aduan-JKR";
 
 const API = {
     async getAll() {
@@ -98,6 +98,28 @@ const API = {
     },
 
     /**
+     * Update Settings specifically
+     */
+    async updateSettings(settings) {
+        try {
+            const res = await fetch(`${API_URL}?token=${AUTH_TOKEN}&action=updateSettings`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'cors',
+                body: JSON.stringify({ settings: settings })
+            });
+
+            const result = await res.json();
+            if (result.status === 'success') return true;
+            throw new Error(result.message || "Gagal simpan tetapan.");
+        } catch (e) {
+            console.error("Update Settings Error:", e);
+            return false;
+        }
+    },
+
+    /**
      * @param {string} type - 'new_complaint', 'assigned', 'clock_in', 'status_update'
      * @param {object} payload - Data relevant to notification
      */
@@ -156,6 +178,38 @@ const API = {
             throw e; // Throw to be caught by caller for detailed alert
         }
     },
+    /**
+     * Delete Single Record from a specific sheet
+     */
+    async deleteRecord(sheet, key, id) {
+        try {
+            const res = await fetch(`${API_URL}?token=${AUTH_TOKEN}&action=delete_record&sheet=${encodeURIComponent(sheet)}&key=${encodeURIComponent(key)}&id=${encodeURIComponent(id)}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                mode: 'cors',
+                body: JSON.stringify({ action: 'delete_record' })
+            });
+
+            const text = await res.text();
+            let result;
+            try {
+                result = JSON.parse(text);
+            } catch (e) {
+                console.error("Server non-JSON response:", text);
+                throw new Error("Server tidak mengembalikan JSON");
+            }
+
+            if (result.status === 'error') {
+                throw new Error(result.message || "Gagal memadam rekod.");
+            }
+
+            return true;
+        } catch (e) {
+            console.error("Delete Record Error:", e);
+            throw e;
+        }
+    },
 
     /**
      * Upload File direct to Google Drive (HD Support)
@@ -174,6 +228,25 @@ const API = {
         } catch (e) {
             console.error("Upload Error:", e);
             throw e;
+        }
+    },
+
+    /**
+     * Delete File from Google Drive
+     */
+    async deleteFile(url) {
+        try {
+            const res = await fetch(`${API_URL}?token=${AUTH_TOKEN}&action=delete_file`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'text/plain' },
+                redirect: 'follow',
+                body: JSON.stringify({ url: url })
+            });
+            const result = await res.json();
+            return result.status === 'success';
+        } catch (e) {
+            console.error("Delete File Error:", e);
+            return false;
         }
     },
 
@@ -249,13 +322,36 @@ const normalizeData = (data) => {
                 if (k === 'masa aduan') jsKey = 'time';
                 if (k === 'status') jsKey = 'status';
                 if (k === 'kontraktor' || k === 'kontraktor dilantik' || k === 'syarikat') jsKey = 'contractor';
+                if (k === 'tarikh lantikan' || k === 'masa lantikan') jsKey = 'assignedDate';
                 if (k === 'catatan admin' || k === 'nota admin') jsKey = 'adminNotes';
                 if (k === 'catatan kontraktor') jsKey = 'contractorNotes';
+                if (k === 'keterangan tugasan' || k === 'arahan tugasan') jsKey = 'taskDescription';
                 if (k === 'tarikh terima' || k === 'masa terima') jsKey = 'dateReceived';
                 if (k === 'tarikh siap' || k === 'masa siap') jsKey = 'dateCompleted';
                 if (k === 'tempoh' || k === 'tempoh siap') jsKey = 'duration';
 
-                normalizedItem[jsKey] = item[key];
+                // Contractor Specific Fields
+                if (k === 'no. daftar' || k === 'no. pendaftaran' || k === 'regno' || k === 'ssm') jsKey = 'regNo';
+                if (k === 'tarikh mula' || k === 'mula kontrak' || k === 'startdate') jsKey = 'startDate';
+                if (k === 'tarikh tamat' || k === 'tamat kontrak' || k === 'enddate') jsKey = 'endDate';
+                if (k === 'no. tel pejabat' || k === 'tel pejabat') jsKey = 'offphone';
+                if (k === 'no. tel bimbit' || k === 'tel bimbit' || k === 'no telefon bimbit') jsKey = 'mobile';
+                if (k === 'bidang' || k === 'skop') jsKey = 'scope';
+                if (k === 'dijana oleh' || k === 'createdby') jsKey = 'createdBy';
+
+                let val = item[key];
+                // Normalize dates for HTML date inputs (YYYY-MM-DD)
+                if (jsKey === 'startDate' || jsKey === 'endDate') {
+                    if (val) {
+                        try {
+                            const d = new Date(val);
+                            if (!isNaN(d.getTime())) {
+                                val = d.toISOString().split('T')[0];
+                            }
+                        } catch (e) { }
+                    }
+                }
+                normalizedItem[jsKey] = val;
             }
             list[index] = normalizedItem;
 
@@ -276,6 +372,42 @@ const normalizeData = (data) => {
     return data;
 };
 
+// Shared mapping for JS keys to Sheet headers
+const REVERSE_MAP = {
+    'id': 'no. aduan',
+    'name': 'nama',
+    'empId': 'no. pekerja',
+    'phone': 'no. telefon',
+    'email': 'emel',
+    'dept': 'jabatan',
+    'location': 'lokasi kerosakan',
+    'description': 'keterangan aduan',
+    'image': 'gambar',
+    'date': 'tarikh aduan',
+    'time': 'masa aduan',
+    'status': 'status',
+    'timestamp': 'timestamp',
+    'contractor': 'kontraktor dilantik',
+    'assignedDate': 'tarikh lantikan',
+    'adminNotes': 'catatan admin',
+    'contractorNotes': 'catatan kontraktor',
+    'taskDescription': 'keterangan tugasan',
+    'dateReceived': 'tarikh terima',
+    'dateCompleted': 'tarikh siap',
+    'duration': 'tempoh siap',
+    'isVerified': 'isVerified',
+    'verifiedDate': 'verifiedDate',
+    'assignedBy': 'assignedBy',
+    'progress': 'progress',
+    'regNo': 'No. Daftar',
+    'startDate': 'Tarikh Mula',
+    'endDate': 'Tarikh Tamat',
+    'offphone': 'No. Tel Pejabat',
+    'mobile': 'No. Tel Bimbit',
+    'scope': 'Bidang',
+    'createdBy': 'Dijana Oleh'
+};
+
 /**
  * Prepares a JS object to be sent back to Google Sheets by mapping JS keys back to Sheet headers
  */
@@ -286,47 +418,23 @@ const prepareDataForSave = (jsData) => {
     const result = { ...jsData };
     delete result._originalKeys;
 
-    // Mapping for common fields if original headers are missing
-    const reverseMap = {
-        'id': 'no. aduan',
-        'name': 'nama',
-        'empId': 'no. pekerja',
-        'phone': 'no. telefon',
-        'email': 'emel',
-        'dept': 'jabatan',
-        'location': 'lokasi kerosakan',
-        'description': 'keterangan aduan',
-        'image': 'gambar',
-        'date': 'tarikh aduan',
-        'time': 'masa aduan',
-        'status': 'status',
-        'contractor': 'kontraktor dilantik',
-        'adminNotes': 'catatan admin',
-        'contractorNotes': 'catatan kontraktor',
-        'dateReceived': 'tarikh terima',
-        'dateCompleted': 'tarikh siap',
-        'duration': 'tempoh siap'
-    };
-
     // We create a new object that uses the "Spreadsheet" headers
     const spreadsheetData = {};
 
-    // First, use reverse map for known critical fields to ensure they match Sheet expectations
+    // Map each JS key to its corresponding Sheet header
     for (const jsKey in result) {
         let sheetHeader = null;
 
-        // Find if we have the original header for this JS key
+        // 1. Try to find the exact original header used when fetching
         for (const lowHeader in originalKeys) {
-            // This is a bit tricky, but we try to find which JS key this lowHeader mapped to
-            // For simplicity, we'll check our known list
-            if (reverseMap[jsKey] && reverseMap[jsKey].toLowerCase() === lowHeader) {
+            if (REVERSE_MAP[jsKey] && REVERSE_MAP[jsKey].toLowerCase() === lowHeader) {
                 sheetHeader = originalKeys[lowHeader];
                 break;
             }
         }
 
-        // Fallback to default Malay headers if original not found
-        const header = sheetHeader || reverseMap[jsKey] || jsKey;
+        // 2. Fallback to predefined mapping or the key itself
+        const header = sheetHeader || REVERSE_MAP[jsKey] || jsKey;
         spreadsheetData[header] = result[jsKey];
     }
 
@@ -343,13 +451,37 @@ API.getAll = async function () {
 const originalUpdateRecord = API.updateRecord;
 API.updateRecord = async function (sheet, key, id, data) {
     const preparedData = prepareDataForSave(data);
-    return originalUpdateRecord.call(this, sheet, key, id, preparedData);
+    // Map JS key (e.g., 'id') to Sheet header (e.g., 'no. aduan') for the lookup key
+    const sheetKey = REVERSE_MAP[key] || key;
+    return originalUpdateRecord.call(this, sheet, sheetKey, id, preparedData);
+};
+
+const originalDeleteRecord = API.deleteRecord;
+API.deleteRecord = async function (sheet, key, id) {
+    // Map JS key (e.g., 'id') to Sheet header (e.g., 'no. aduan') for the lookup key
+    const sheetKey = REVERSE_MAP[key] || key;
+    return originalDeleteRecord.call(this, sheet, sheetKey, id);
 };
 
 const originalAppendRecord = API.appendRecord;
 API.appendRecord = async function (sheet, data) {
     const preparedData = prepareDataForSave(data);
     return originalAppendRecord.call(this, sheet, preparedData);
+};
+
+const originalSaveAll = API.saveAll;
+API.saveAll = async function (fullData) {
+    const preparedFullData = { ...fullData };
+    if (preparedFullData.complaints && Array.isArray(preparedFullData.complaints)) {
+        preparedFullData.complaints = preparedFullData.complaints.map(item => prepareDataForSave(item));
+    }
+    if (preparedFullData.contractors && Array.isArray(preparedFullData.contractors)) {
+        preparedFullData.contractors = preparedFullData.contractors.map(item => prepareDataForSave(item));
+    }
+    if (preparedFullData.admins && Array.isArray(preparedFullData.admins)) {
+        preparedFullData.admins = preparedFullData.admins.map(item => prepareDataForSave(item));
+    }
+    return originalSaveAll.call(this, preparedFullData);
 };
 
 // Expose globally

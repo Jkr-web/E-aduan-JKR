@@ -250,15 +250,27 @@ window.renderComplaintForm = function (containerId) {
 
                 if (fileInput && fileInput.files.length > 0) {
                     const totalFiles = fileInput.files.length;
+                    const progressContainer = document.getElementById('upload-progress-container');
+                    const progressBar = document.getElementById('upload-progress-bar');
+
+                    if (progressContainer) progressContainer.style.display = 'block';
+
                     for (let i = 0; i < totalFiles; i++) {
                         const file = fileInput.files[i];
 
-                        // Update UI
+                        // Update UI to compression phase
+                        const baseProgress = Math.round((i / totalFiles) * 100);
                         if (textEl) textEl.textContent = `Memproses Imej ${i + 1}/${totalFiles}...`;
-                        if (percentEl) percentEl.textContent = `${Math.round((i / (totalFiles + 1)) * 100)}%`;
+                        if (percentEl) percentEl.textContent = `${baseProgress}%`;
+                        if (progressBar) progressBar.style.width = `${baseProgress}%`;
 
                         // Compress a bit more for faster upload and to stay within GAS limits
                         const compressedBase64 = await compressImage(file, 1200, 1200, 0.6);
+
+                        // Halfway through this file
+                        const midProgress = Math.round(((i + 0.5) / totalFiles) * 100);
+                        if (percentEl) percentEl.textContent = `${midProgress}%`;
+                        if (progressBar) progressBar.style.width = `${midProgress}%`;
 
                         // Update UI to uploading
                         if (textEl) textEl.textContent = `Mengunggah Imej ${i + 1}/${totalFiles}...`;
@@ -272,10 +284,17 @@ window.renderComplaintForm = function (containerId) {
                             throw new Error(`Gagal memuat naik imej ke- ${i + 1}: ${uploadErr.message}`);
                         }
                     }
+                    if (percentEl) percentEl.textContent = `100%`;
+                    if (progressBar) progressBar.style.width = `100%`;
+                    setTimeout(() => { if (progressContainer) progressContainer.style.display = 'none'; }, 500);
                 }
 
                 if (textEl) textEl.textContent = "Menghantar Aduan...";
-                if (percentEl) percentEl.textContent = "95%";
+                if (percentEl) {
+                    percentEl.textContent = "95%";
+                    const progressBar = document.getElementById('upload-progress-bar');
+                    if (progressBar) progressBar.style.width = "95%";
+                }
 
                 let rawPhone = document.getElementById('no-telefon').value.trim();
                 if (rawPhone && !rawPhone.startsWith('0') && !rawPhone.startsWith('+') && !rawPhone.startsWith('6')) {
@@ -296,7 +315,7 @@ window.renderComplaintForm = function (containerId) {
                     date: document.getElementById('tarikh-aduan').value,
                     time: document.getElementById('masa-aduan').value,
                     status: 'Baru',
-                    timestamp: new Date().toISOString()
+                    timestamp: `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
                 };
 
                 // 5. Save to Server (Using appendRecord for efficiency)
