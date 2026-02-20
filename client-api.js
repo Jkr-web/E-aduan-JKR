@@ -217,35 +217,50 @@ const API = {
     }
 };
 
-// --- GLOBAL UTILITY: Fix existing phone data for UI ---
-const fixPhoneData = (data) => {
+// --- GLOBAL UTILITY: Fix data from API (Casing & Phone) ---
+const normalizeData = (data) => {
     if (!data) return data;
-    const fix = (list) => {
+
+    const normalizeList = (list) => {
         if (!list || !Array.isArray(list)) return;
-        list.forEach(item => {
-            if (item.phone) {
-                let p = item.phone.toString().trim();
-                // Strip the single quote if it was added for DB
+        list.forEach((item, index) => {
+            // 1. Normalize Keys (e.g. "Kontraktor" -> "contractor")
+            const normalizedItem = {};
+            for (const key in item) {
+                let k = key.toLowerCase().trim();
+                // Map common Malay headers to JS keys
+                if (k === 'kontraktor') k = 'contractor';
+                if (k === 'catatan admin') k = 'adminNotes';
+                if (k === 'catatan kontraktor') k = 'contractorNotes';
+                if (k === 'tarikh terima') k = 'dateReceived';
+                if (k === 'tarikh siap') k = 'dateCompleted';
+
+                normalizedItem[k] = item[key];
+            }
+            list[index] = normalizedItem;
+
+            // 2. Fix Phone Data
+            const currentItem = list[index];
+            if (currentItem.phone) {
+                let p = currentItem.phone.toString().trim();
                 if (p.startsWith("'")) p = p.substring(1);
-                // Add leading zero if missing and not international
-                if (p && !p.startsWith('0') && !p.startsWith('+') && !p.startsWith('6')) {
-                    p = '0' + p;
-                }
-                item.phone = p;
+                if (p && !p.startsWith('0') && !p.startsWith('+') && !p.startsWith('6')) p = '0' + p;
+                currentItem.phone = p;
             }
         });
     };
-    fix(data.complaints);
-    fix(data.contractors);
-    fix(data.admins);
+
+    normalizeList(data.complaints);
+    normalizeList(data.contractors);
+    normalizeList(data.admins);
     return data;
 };
 
-// Wrap getAll to apply the fix
+// Wrap getAll to apply normalization
 const originalGetAll = API.getAll;
 API.getAll = async function () {
     const data = await originalGetAll.apply(this, arguments);
-    return fixPhoneData(data);
+    return normalizeData(data);
 };
 
 // Expose globally

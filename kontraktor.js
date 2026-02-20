@@ -318,7 +318,12 @@ window.loadContractorDashboard = async function (contractorName) {
         // localStorage.setItem('complaints', JSON.stringify(allComplaints));
 
         // FILTER: Only show complaints assigned to this contractor
-        const myTasks = allComplaints.filter(c => c.contractor === contractorName);
+        // Using flexible matching for both key name (contractor/Kontraktor) and value (casing/spaces)
+        const myTasks = allComplaints.filter(c => {
+            const assignedContractor = (c.contractor || c.Kontraktor || "").toString().toLowerCase().trim();
+            const targetName = (contractorName || "").toString().toLowerCase().trim();
+            return assignedContractor === targetName;
+        });
 
         // Calculate Stats
         const newTasks = myTasks.filter(c => c.status === 'Tindakan Kontraktor' || c.status === 'Aduan Diterima').length;
