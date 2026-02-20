@@ -1,5 +1,5 @@
 // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-const API_URL = 'https://script.google.com/macros/s/AKfycbxnTwnHqoN6p9-zT8ePMtwQweTHEzfTxGhlWg-Sr-uljPe-ysAC97z1Iv96rFIRr-od/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxCb71-QaHsr1lQAoThus3aUq79YLMcxt0w1BSRcpn0YltoUF734rJBPduD_wu59_IM/exec';
 
 // --- TOKEN KESELAMATAN (Mesti sama dengan di Google Apps Script) ---
 const AUTH_TOKEN = "RAHSIA_JKR_2026_SECURE";
