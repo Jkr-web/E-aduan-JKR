@@ -523,10 +523,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     phone: currentAdmin ? (currentAdmin.mobile || currentAdmin.offphone || '-') : (localStorage.getItem('userPhone') || '-')
                 };
 
+                // Sync with main edit form in case notes were updated
+                const mainNotes = document.getElementById('edit-notes');
+                if (mainNotes) {
+                    complaints[index].adminNotes = mainNotes.value;
+                }
+
                 complaints[index].contractor = contractor;
                 complaints[index].taskDescription = taskDesc;
                 complaints[index].status = 'Tindakan Kontraktor'; // Update Status
-                // Admin notes not modified automatically
 
                 // Save back to API (Using updateRecord for efficiency)
                 await API.updateRecord('Aduan', 'id', id, complaints[index]);

@@ -217,29 +217,49 @@ const API = {
     }
 };
 
-// --- GLOBAL UTILITY: Fix data from API (Casing & Phone) ---
+// --- GLOBAL UTILITY: Fix data from API (Casing, Mapping & Phone) ---
 const normalizeData = (data) => {
     if (!data) return data;
 
     const normalizeList = (list) => {
         if (!list || !Array.isArray(list)) return;
         list.forEach((item, index) => {
-            // 1. Normalize Keys (e.g. "Kontraktor" -> "contractor")
             const normalizedItem = {};
-            for (const key in item) {
-                let k = key.toLowerCase().trim();
-                // Map common Malay headers to JS keys
-                if (k === 'kontraktor') k = 'contractor';
-                if (k === 'catatan admin') k = 'adminNotes';
-                if (k === 'catatan kontraktor') k = 'contractorNotes';
-                if (k === 'tarikh terima') k = 'dateReceived';
-                if (k === 'tarikh siap') k = 'dateCompleted';
+            // Record original keys to map back during save
+            normalizedItem._originalKeys = {};
 
-                normalizedItem[k] = item[key];
+            for (const key in item) {
+                if (key === '_originalKeys') continue;
+
+                let k = key.toLowerCase().trim();
+                normalizedItem._originalKeys[k] = key; // Store original header
+
+                // Map Malay/Various headers to consistent JS keys
+                let jsKey = k;
+                if (k === 'no. aduan' || k === 'id aduan') jsKey = 'id';
+                if (k === 'nama' || k === 'nama pengadu') jsKey = 'name';
+                if (k === 'no. pekerja' || k === 'no pekerja') jsKey = 'empId';
+                if (k === 'no. telefon' || k === 'no telefon') jsKey = 'phone';
+                if (k === 'emel' || k === 'emel pengadu') jsKey = 'email';
+                if (k === 'jabatan') jsKey = 'dept';
+                if (k === 'lokasi' || k === 'lokasi kerosakan') jsKey = 'location';
+                if (k === 'keterangan' || k === 'keterangan aduan') jsKey = 'description';
+                if (k === 'gambar') jsKey = 'image';
+                if (k === 'tarikh aduan') jsKey = 'date';
+                if (k === 'masa aduan') jsKey = 'time';
+                if (k === 'status') jsKey = 'status';
+                if (k === 'kontraktor' || k === 'kontraktor dilantik' || k === 'syarikat') jsKey = 'contractor';
+                if (k === 'catatan admin' || k === 'nota admin') jsKey = 'adminNotes';
+                if (k === 'catatan kontraktor') jsKey = 'contractorNotes';
+                if (k === 'tarikh terima' || k === 'masa terima') jsKey = 'dateReceived';
+                if (k === 'tarikh siap' || k === 'masa siap') jsKey = 'dateCompleted';
+                if (k === 'tempoh' || k === 'tempoh siap') jsKey = 'duration';
+
+                normalizedItem[jsKey] = item[key];
             }
             list[index] = normalizedItem;
 
-            // 2. Fix Phone Data
+            // Fix Phone Data formatting
             const currentItem = list[index];
             if (currentItem.phone) {
                 let p = currentItem.phone.toString().trim();
@@ -256,11 +276,80 @@ const normalizeData = (data) => {
     return data;
 };
 
-// Wrap getAll to apply normalization
+/**
+ * Prepares a JS object to be sent back to Google Sheets by mapping JS keys back to Sheet headers
+ */
+const prepareDataForSave = (jsData) => {
+    if (!jsData || typeof jsData !== 'object') return jsData;
+
+    const originalKeys = jsData._originalKeys || {};
+    const result = { ...jsData };
+    delete result._originalKeys;
+
+    // Mapping for common fields if original headers are missing
+    const reverseMap = {
+        'id': 'no. aduan',
+        'name': 'nama',
+        'empId': 'no. pekerja',
+        'phone': 'no. telefon',
+        'email': 'emel',
+        'dept': 'jabatan',
+        'location': 'lokasi kerosakan',
+        'description': 'keterangan aduan',
+        'image': 'gambar',
+        'date': 'tarikh aduan',
+        'time': 'masa aduan',
+        'status': 'status',
+        'contractor': 'kontraktor dilantik',
+        'adminNotes': 'catatan admin',
+        'contractorNotes': 'catatan kontraktor',
+        'dateReceived': 'tarikh terima',
+        'dateCompleted': 'tarikh siap',
+        'duration': 'tempoh siap'
+    };
+
+    // We create a new object that uses the "Spreadsheet" headers
+    const spreadsheetData = {};
+
+    // First, use reverse map for known critical fields to ensure they match Sheet expectations
+    for (const jsKey in result) {
+        let sheetHeader = null;
+
+        // Find if we have the original header for this JS key
+        for (const lowHeader in originalKeys) {
+            // This is a bit tricky, but we try to find which JS key this lowHeader mapped to
+            // For simplicity, we'll check our known list
+            if (reverseMap[jsKey] && reverseMap[jsKey].toLowerCase() === lowHeader) {
+                sheetHeader = originalKeys[lowHeader];
+                break;
+            }
+        }
+
+        // Fallback to default Malay headers if original not found
+        const header = sheetHeader || reverseMap[jsKey] || jsKey;
+        spreadsheetData[header] = result[jsKey];
+    }
+
+    return spreadsheetData;
+};
+
+// Wrap API methods to handle data transformation
 const originalGetAll = API.getAll;
 API.getAll = async function () {
     const data = await originalGetAll.apply(this, arguments);
     return normalizeData(data);
+};
+
+const originalUpdateRecord = API.updateRecord;
+API.updateRecord = async function (sheet, key, id, data) {
+    const preparedData = prepareDataForSave(data);
+    return originalUpdateRecord.call(this, sheet, key, id, preparedData);
+};
+
+const originalAppendRecord = API.appendRecord;
+API.appendRecord = async function (sheet, data) {
+    const preparedData = prepareDataForSave(data);
+    return originalAppendRecord.call(this, sheet, preparedData);
 };
 
 // Expose globally
