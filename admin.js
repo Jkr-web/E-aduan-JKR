@@ -424,7 +424,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${c['tarikh siap'] || c.dateCompleted ? formatDisplayDate(c['tarikh siap'] || c.dateCompleted) : '-'}
                 </td>
                 <td data-label="Tempoh" style="padding: 12px 10px; font-weight: 600; color: #34495e;">${c['tempoh siap'] || c.duration || '-'}</td>
-                <td data-label="Rating" style="padding: 12px 10px;">${renderStars(c.rating, c.feedback)}</td>
+                <td data-label="Rating" style="padding: 12px 10px;">${renderStars(c.rating || c.Rating || c.penilaian, c.feedback || c.Feedback || c['maklum balas'] || c.ulasan)}</td>
             `;
                 tableBody.appendChild(trData);
                 // ... (helper function definition below outside the loop if preferred, or at the end of the script)
@@ -686,10 +686,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 await API.updateRecord('Aduan', 'no. aduan', id, complaints[index]);
                 console.log(`Complaint ${id} assigned to ${contractor}`);
 
-                // Send Notifications
-                // 1. To Contractor
+                // Send Notifications (Non-blocking / Background)
                 const contractorEmail = (window.allContractors || []).find(c => c.name === contractor)?.email || '';
-                await API.sendNotification('assigned', {
+
+                // Trigger notifications without awaiting them to improve UI speed
+                API.sendNotification('assigned', {
                     complaintId: id,
                     contractorName: contractor,
                     contractorEmail: contractorEmail,
@@ -698,8 +699,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     taskDescription: taskDesc
                 });
 
-                // 2. To User (Pengadu)
-                await API.sendNotification('status_update', {
+                API.sendNotification('status_update', {
                     complaintId: id,
                     userName: complaints[index]['nama'] || complaints[index].name,
                     userEmail: complaints[index]['emel'] || complaints[index].email,
@@ -2030,34 +2030,32 @@ window.verifyTask = async function (id) {
         complaints[index] = currentComplaint;
         window.allComplaints = complaints;
 
-        // 3. SUCCESS ANIMATION
+        // 3. SUCCESS ANIMATION & UI REFRESH (Lakukan SEGERA)
+        renderComplaintTable(window.allComplaints);
+        viewProgress(id);
+
         if (typeof Swal !== 'undefined') {
             Swal.fire({
                 icon: 'success',
                 title: 'Berjaya Disahkan',
                 text: 'Tugasan telah disahkan dan direkodkan dengan jayanya!',
                 confirmButtonColor: '#27ae60',
-                timer: 3000
+                timer: 2000
             });
-        } else {
-            alert("Tugasan telah berjaya disahkan.");
         }
 
-        // 4. Notify User/Stakeholder (Task Verified)
-        const baseUrl = window.location.origin + window.location.pathname.replace('main.html', '');
-        const ratingUrl = `${baseUrl}Rating.html?id=${id}`;
+        // 4. Notify User/Stakeholder (Task Verified) - NON-BLOCKING
+        const baseUrl = window.location.origin + window.location.pathname.replace('main.html', '').replace('index.html', '');
+        const ratingUrl = `${baseUrl}Rating.html?id=${encodeURIComponent(id)}`;
 
-        await API.sendNotification('task_verified', {
+        // Trigger notification in background
+        API.sendNotification('task_verified', {
             complaintId: id,
             userName: currentComplaint['nama'] || currentComplaint.name,
             userEmail: currentComplaint['emel'] || currentComplaint.email,
             verifiedDate: new Date(verifiedDate).toLocaleString('ms-MY'),
             ratingUrl: ratingUrl
         });
-
-        // 5. Refresh UI
-        renderComplaintTable(window.allComplaints);
-        viewProgress(id);
 
     } catch (err) {
         console.error("Verification Error:", err);
@@ -2476,8 +2474,8 @@ window.renderReportTable = async function () {
                 <td data-label="Kerosakan" style="padding: 10px; max-width: 250px; word-wrap: break-word;">${c.description || '-'}</td>
                 <td data-label="Status" style="padding: 10px;"><span style="background:${statusColor}; color:white; padding: 3px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${c.status}</span></td>
                 <td data-label="Kontraktor" style="padding: 10px;">${c.contractor || '-'}</td>
-                <td data-label="Tempoh" style="padding: 10px; white-space: nowrap;">${c.duration || '-'}</td>
-                <td data-label="Rating" style="padding: 10px;">${renderStars(c.rating, c.feedback, true)}</td>
+                <td data-label="Tempoh" style="padding: 10px; white-space: nowrap;">${c['tempoh siap'] || c.duration || '-'}</td>
+                <td data-label="Rating" style="padding: 10px;">${renderStars(c.rating || c.Rating || c.penilaian, c.feedback || c.Feedback || c['maklum balas'] || c.ulasan, true)}</td>
             `;
             tbody.appendChild(tr);
         });
@@ -2555,42 +2553,42 @@ window.generateReportHTML = function () {
     const logoUrl = localStorage.getItem('appLogo') || '';
     const systemName = localStorage.getItem('systemName') || 'PORTAL JKR ADUAN';
 
-    // 1. PREMIUM HEADER
+    // 1. COMPACT PREMIUM HEADER
     let headerHtml = `
-        <div style="padding: 40px; border-bottom: 2px solid #f1f5f9; background: linear-gradient(to right, #ffffff, #f8fafc); display: flex; align-items: center; justify-content: space-between;">
-            <div style="display: flex; align-items: center; gap: 20px;">
-                ${logoUrl ? `<img src="${logoUrl}" style="height: 60px; object-fit: contain;">` : '<div style="width: 60px; height: 60px; background: #2c3e50; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px;">JKR</div>'}
-                <div>
-                    <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: -0.5px;">${systemName}</h1>
-                    <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b; font-weight: 500;">LAPORAN ANALISIS & STATISTIK ADUAN KEROSAKAN</p>
-                </div>
+        <div style="padding: 15px 40px; border-bottom: 2px solid #f1f5f9; background: linear-gradient(to bottom, #ffffff, #f8fafc); display: flex; flex-direction: column; align-items: center; text-align: center; width: 100%; box-sizing: border-box;">
+            <div style="margin-bottom: 10px; max-width: 200px;">
+                ${logoUrl ? `<img src="${logoUrl}" style="max-height: 50px; max-width: 100%; object-fit: contain;">` : '<div style="width: 50px; height: 50px; background: #2c3e50; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 20px;">JKR</div>'}
             </div>
-            <div style="text-align: right;">
-                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Tarikh Laporan</div>
-                <div style="font-size: 14px; font-weight: 700; color: #2c3e50;">${dateStr}</div>
+            <div style="width: 100%;">
+                <h1 style="margin: 0; font-size: 16px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: -0.2px; line-height: 1.1;">${systemName}</h1>
+                <p style="margin: 2px 0 8px 0; font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.2px;">LAPORAN ANALISIS & STATISTIK ADUAN KEROSAKAN</p>
+            </div>
+            <div style="background: #f1f5f9; padding: 4px 15px; border-radius: 20px; display: inline-flex; align-items: center; gap: 6px; border: 1px solid #e2e8f0;">
+                <span style="font-size: 8px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 800;">TARIKH:</span>
+                <span style="font-size: 11px; font-weight: 800; color: #2c3e50;">${dateStr}</span>
             </div>
         </div>
     `;
 
     // 2. STATISTICS CARDS
     let statsSection = `
-        <div style="padding: 30px 40px; background: #fff;">
-            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
-                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; text-align: center;">
-                    <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px;">Jumlah Aduan</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #0f172a;">${stats.total}</div>
+        <div style="padding: 15px 40px; background: #fff; width: 100%; box-sizing: border-box;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 10px; text-align: center;">
+                    <div style="font-size: 8px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 3px;">Jumlah Aduan</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #0f172a;">${stats.total}</div>
                 </div>
-                <div style="background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 12px; padding: 15px; text-align: center;">
-                    <div style="font-size: 10px; font-weight: 800; color: #065f46; text-transform: uppercase; margin-bottom: 5px;">Selesai</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #059669;">${stats.selesai}</div>
+                <div style="background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 8px; padding: 10px; text-align: center;">
+                    <div style="font-size: 8px; font-weight: 800; color: #065f46; text-transform: uppercase; margin-bottom: 3px;">Selesai</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #059669;">${stats.selesai}</div>
                 </div>
-                <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 15px; text-align: center;">
-                    <div style="font-size: 10px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 5px;">Dalam Proses</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #2563eb;">${stats.proses}</div>
+                <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 8px; padding: 10px; text-align: center;">
+                    <div style="font-size: 8px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 3px;">Proses</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #2563eb;">${stats.proses}</div>
                 </div>
-                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 15px; text-align: center;">
-                    <div style="font-size: 10px; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 5px;">Baru / Ditolak</div>
-                    <div style="font-size: 24px; font-weight: 800; color: #d97706;">${stats.baru + stats.rejected}</div>
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 8px; padding: 10px; text-align: center;">
+                    <div style="font-size: 8px; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 3px;">Baru / Ditolak</div>
+                    <div style="font-size: 18px; font-weight: 800; color: #d97706;">${stats.baru + stats.rejected}</div>
                 </div>
             </div>
         </div>
@@ -2603,10 +2601,10 @@ window.generateReportHTML = function () {
         try {
             const chartImgUrl = canvas.toDataURL('image/png', 1.0);
             chartSection = `
-                <div style="padding: 0 40px 30px 40px; page-break-inside: avoid;">
-                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; align-items: center;">
-                        <h3 style="margin: 0 0 20px 0; font-size: 14px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #3498db; padding-bottom: 5px;">Taburan Status Aduan semasa</h3>
-                        <img src="${chartImgUrl}" style="height: 220px; width: auto; object-fit: contain;">
+                <div style="padding: 0 40px 20px 40px; page-break-inside: avoid; text-align: center; width: 100%; box-sizing: border-box;">
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; display: flex; flex-direction: column; align-items: center; width: 100%;">
+                        <h3 style="margin: 0 0 15px 0; font-size: 12px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #3498db; padding-bottom: 4px; display: inline-block;">Taburan Status Aduan Semasa</h3>
+                        <img src="${chartImgUrl}" style="height: 180px; width: auto; max-width: 100%; object-fit: contain;">
                     </div>
                 </div>
             `;
@@ -2651,31 +2649,83 @@ window.generateReportHTML = function () {
         });
 
         tableHtml = `
-            <div style="padding: 0 40px 40px 40px;">
-                <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #2ecc71; padding-bottom: 5px;">Senarai Terperinci Aduan</h3>
-                <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
+            <div style="padding: 0 40px 30px 40px; text-align: center; width: 100%; box-sizing: border-box;">
+                <h3 style="margin: 0 0 12px 0; font-size: 12px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #2ecc71; padding-bottom: 4px; display: inline-block;">Senarai Terperinci Aduan</h3>
+                <div style="border: 1px solid #e2e8f0; border-radius: 10px; overflow: hidden; text-align: left; width: 100%;">
                     ${tableClone.outerHTML}
                 </div>
             </div>
         `;
     }
 
-    // 5. FOOTER
-    const footerHtml = `
-        <div style="padding: 20px 40px; border-top: 1px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #94a3b8;">
-            <div>
-                <strong>Sistem JKR Aduan</strong> &copy; ${new Date().getFullYear()} - Jabatan Kerja Raya Malaysia
+    // 5. FEEDBACK SECTION (Suara Pengguna)
+    const feedbacks = complaints.filter(c => {
+        const r = c.rating || c.Rating || c.penilaian;
+        return r && parseInt(r) > 0;
+    });
+
+    let feedbackCards = '';
+    if (feedbacks.length > 0) {
+        feedbackCards = feedbacks.map(f => {
+            const r = f.rating || f.Rating || f.penilaian;
+            const fb = f.feedback || f.Feedback || f['maklum balas'] || f.ulasan;
+            return `
+            <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; page-break-inside: avoid; margin-bottom: 10px; width: 45%; flex-grow: 1; box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 8px;">
+                    <div style="font-weight: 800; color: #1e293b; font-size: 11px;">${f.name || f.nama || 'Pengguna'}</div>
+                    <div style="font-size: 9px; color: #64748b;">${f['no. aduan'] || f.id || ''}</div>
+                </div>
+                <div style="margin-bottom: 8px; text-align: left;">
+                    ${renderStars(r, '', true)}
+                </div>
+                <div style="font-style: italic; color: #475569; font-size: 10px; line-height: 1.4; background: #f8fafc; padding: 8px; border-radius: 8px;">
+                    "${fb || 'Tiada ulasan.'}"
+                </div>
+            </div>`;
+        }).join('');
+    } else {
+        feedbackCards = `
+            <div style="padding: 30px; text-align: center; color: #94a3b8; font-style: italic; font-size: 12px; border: 2px dashed #e2e8f0; border-radius: 16px; width: 100%;">
+                <i class="fas fa-comment-slash" style="font-size: 24px; margin-bottom: 10px; display: block; color: #cbd5e1;"></i>
+                Tiada maklum balas atau rating diterima setakat ini.
             </div>
-            <div>
-                Laporan Berkomputer - Dijana pada ${new Date().toLocaleString('ms-MY')}
+        `;
+    }
+
+    const feedbackHtml = `
+        <div style="padding: 0 40px 40px 40px; text-align: center; width: 100%; box-sizing: border-box;">
+            <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #f1c40f; padding-bottom: 5px; display: inline-block;">Suara Pengguna (Rating & Maklum Balas)</h3>
+            <div style="display: flex; flex-wrap: wrap; gap: 15px; justify-content: center; margin-top: 15px;">
+                ${feedbackCards}
+            </div>
+        </div>
+    `;
+
+    // 6. COMPACT FOOTER
+    const footerHtml = `
+        <div style="padding: 15px 40px; border-top: 2px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; font-size: 9px; color: #94a3b8; width: 100%; box-sizing: border-box;">
+            <div style="display: flex; align-items: center; gap: 5px;">
+                <i class="fas fa-shield-alt" style="color: #cbd5e1;"></i>
+                <strong>Sistem JKR Aduan</strong> &copy; ${new Date().getFullYear()} - Rasmi
+            </div>
+            <div style="display: flex; align-items: center; gap: 10px;">
+                <span>Digital ID: ${Math.random().toString(36).substring(2, 10).toUpperCase()}</span>
+                <span style="height: 10px; width: 1px; background: #e2e8f0;"></span>
+                <span>Dijana pada: ${new Date().toLocaleString('ms-MY', { hour12: true })}</span>
             </div>
         </div>
     `;
 
     // Assembly wrapper to mimic A4 width in preview
     return `
-        <div id="printable-report" style="width: 794px; background: white; font-family: 'Inter', Helvetica, Arial, sans-serif; color: #1e293b; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.1);">
-            ${headerHtml + statsSection + chartSection + tableHtml + footerHtml}
+        <div id="printable-report" style="width: 794px; max-width: 95%; background: white; font-family: 'Inter', Helvetica, Arial, sans-serif; color: #1e293b; margin: 20px auto; box-shadow: 0 0 30px rgba(0,0,0,0.15); border-radius: 8px; overflow: hidden; min-height: 1123px; display: block; box-sizing: border-box; position: relative;">
+            <style>
+                #printable-report * { box-sizing: border-box; }
+                @media screen and (max-width: 800px) {
+                    #printable-report { width: 100% !important; margin: 10px auto !important; }
+                }
+            </style>
+            ${headerHtml + statsSection + chartSection + tableHtml + feedbackHtml + footerHtml}
         </div>
     `;
 };
@@ -2758,28 +2808,37 @@ window.downloadReportPDF = function () {
 
     // Create a temporary container for html2pdf
     const reportDiv = document.createElement('div');
+    reportDiv.style.width = '1400px'; // Further increase virtual width for a "smaller" print look
+    reportDiv.style.background = 'white';
     reportDiv.innerHTML = reportHTML;
 
-    // Remove the shadow wrapper from the printable content for PDF conversion
+    // Remove the shadow wrapper and force full width for PDF conversion
     const content = reportDiv.querySelector('#printable-report');
-    if (content) content.style.boxShadow = 'none';
+    if (content) {
+        content.style.boxShadow = 'none';
+        content.style.width = '1400px';
+        content.style.margin = '0';
+        content.style.borderRadius = '0';
+    }
 
     reportDiv.style.position = 'absolute';
     reportDiv.style.left = '-9999px';
     document.body.appendChild(reportDiv);
 
     const opt = {
-        margin: [0, 0, 0, 0],
+        margin: [20, 0, 20, 0],
         filename: `Laporan_Aduan_JKR_${new Date().toISOString().slice(0, 10)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
-            scale: 2,
+            scale: 1.5,
             useCORS: true,
             logging: false,
             letterRendering: true,
-            windowWidth: 794
+            width: 1400,
+            windowWidth: 1400
         },
-        jsPDF: { unit: 'px', format: 'a4', orientation: 'portrait', hotfixes: ['px_scaling'] }
+        jsPDF: { unit: 'px', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
     };
 
     if (window.html2pdf) {

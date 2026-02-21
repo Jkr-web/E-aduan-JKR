@@ -246,19 +246,20 @@
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghantar...';
 
             // URL Web App anda dari client-api.js
-            const api_url = "https://script.google.com/macros/s/AKfycbznch0vQYKCQWcRyry9egq83CsbyxGAy6GF8TA19qY0NldRi0cfN17cQKRr38ch1Se7/exec";
+            const api_url = 'https://script.google.com/macros/s/AKfycbznlCAJHeb1ZFB3Mo6UEXM1NW24ZVn6kPLN-ugB9gvpzf3uudIUshzPN__YpmLHNpqz/exec';
             const token = "https://github.com/Jkr-web/E-aduan-JKR";
 
             try {
-                // POST ke Google Script
-                // Kita hantar sebagai text/plain untuk mengelakkan isu CORS preflight
-                await fetch(`${api_url}?token=${token}&action=submit_rating&id=${complaintId}`, {
+                // Gunakan URLSearchParams untuk penghantaran data yang lebih serasi dengan Google Script
+                const payload = new URLSearchParams();
+                payload.append('rating', selectedRating);
+                payload.append('feedback', feedback);
+
+                // POST ke Google Script menggunakan mode: 'no-cors'
+                // Kami menghantar data dalam URL untuk kepastian simpanan yang lebih tinggi bagi 'no-cors'
+                await fetch(`${api_url}?token=${token}&action=submit_rating&id=${encodeURIComponent(complaintId)}&rating=${selectedRating}&feedback=${encodeURIComponent(feedback)}`, {
                     method: 'POST',
-                    mode: 'no-cors', // Penting untuk GAS post
-                    body: JSON.stringify({
-                        rating: selectedRating,
-                        feedback: feedback
-                    })
+                    mode: 'no-cors'
                 });
 
                 // Kerana no-cors, kita tidak boleh baca response. Kita andaikan sukses.

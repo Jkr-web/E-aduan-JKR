@@ -1075,15 +1075,14 @@ window.submitProgress = async function (action) {
 
                 if (!success) throw new Error("Gagal mengemaskini rekod di server.");
 
-                // NOTIFICATIONS
+                // NOTIFICATIONS (Non-blocking / Background)
                 if (action === 'clock-in') {
-                    // Notify Admin
-                    await API.sendNotification('clock_in', {
+                    // Notify Admin & User without awaiting to speed up UI
+                    API.sendNotification('clock_in', {
                         complaintId: id,
                         contractorName: complaint['kontraktor dilantik'] || complaint.contractor
                     });
-                    // Notify User
-                    await API.sendNotification('status_update', {
+                    API.sendNotification('status_update', {
                         complaintId: id,
                         userName: complaint['nama'] || complaint.name,
                         userEmail: complaint['emel'] || complaint.email,
@@ -1092,7 +1091,7 @@ window.submitProgress = async function (action) {
                     });
                 } else if (action === 'complete') {
                     // 1. Notify User (Status Update)
-                    await API.sendNotification('status_update', {
+                    API.sendNotification('status_update', {
                         complaintId: id,
                         userName: complaint['nama'] || complaint.name,
                         userEmail: complaint['emel'] || complaint.email,
@@ -1100,8 +1099,8 @@ window.submitProgress = async function (action) {
                         updateBy: complaint['kontraktor dilantik'] || complaint.contractor
                     });
 
-                    // 2. Notify Admin (Task Ready for Review) - NEW
-                    await API.sendNotification('task_completed', {
+                    // 2. Notify Admin (Task Ready for Review)
+                    API.sendNotification('task_completed', {
                         complaintId: id,
                         contractorName: complaint['kontraktor dilantik'] || complaint.contractor
                     });
