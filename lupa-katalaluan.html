@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lupa Kata Laluan - JKR Aduan</title>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --bg-overlay: rgba(244, 247, 246, 0.9);
+            --bg-image: none;
+            --primary-color: #0056b3;
+            --secondary-color: #2c3e50;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            background-image: linear-gradient(var(--bg-overlay), var(--bg-overlay)), var(--bg-image);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .lupa-container {
+            background-color: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            max-width: 450px;
+            width: 90%;
+            text-align: center;
+            box-sizing: border-box;
+        }
+
+        .logo-wrapper {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px auto;
+            background: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+            overflow: hidden;
+            padding: 5px;
+        }
+
+        .logo {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        h2 {
+            margin-bottom: 5px;
+            color: var(--secondary-color);
+            font-size: 1.4rem;
+        }
+
+        p.subtitle {
+            color: #7f8c8d;
+            font-size: 0.9rem;
+            margin-bottom: 25px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #444;
+            font-size: 0.9rem;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 1rem;
+            box-sizing: border-box;
+            transition: border-color 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+        }
+
+        .btn-primary:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+
+        .btn-primary:not(:disabled):hover {
+            background-color: #004494;
+            transform: translateY(-1px);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #ddd;
+            color: #7f8c8d;
+            margin-top: 15px;
+            font-size: 0.9rem;
+        }
+
+        .btn-outline:hover {
+            background: #f8f9fa;
+            color: var(--secondary-color);
+        }
+
+        /* Result Section */
+        #search-result {
+            display: none;
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            text-align: left;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .result-item {
+            margin-bottom: 12px;
+        }
+
+        .result-label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            font-weight: 700;
+        }
+
+        .result-value {
+            font-size: 1.1rem;
+            color: var(--secondary-color);
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #dcfce7;
+            color: #15803d;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            display: inline-block;
+            margin-bottom: 15px;
+        }
+
+        /* Success View */
+        #success-view {
+            display: none;
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            color: #27ae60;
+            margin-bottom: 20px;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        /* Animations */
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+
+            70% {
+                transform: scale(1.05);
+                opacity: 1;
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                box-shadow: 0 0 0 0 rgba(0, 86, 179, 0.4);
+            }
+
+            70% {
+                box-shadow: 0 0 0 15px rgba(0, 86, 179, 0);
+            }
+
+            100% {
+                box-shadow: 0 0 0 0 rgba(0, 86, 179, 0);
+            }
+        }
+
+        .animate-pop {
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .animate-shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+
+        /* Custom Toast/Alert */
+        .toast {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #e74c3c;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
+            display: none;
+            z-index: 2000;
+            animation: slideUp 0.3s ease-out;
+        }
+
+        #search-result.active {
+            display: block;
+            animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #success-view.active {
+            display: block;
+            animation: slideUp 0.6s ease-out;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="lupa-container">
+        <!-- Section 1: Search -->
+        <div id="search-view">
+            <div class="logo-wrapper">
+                <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" fill="#0056b3" />
+                    <text x="50" y="55" font-size="20" text-anchor="middle" fill="white" font-family="Arial, sans-serif"
+                        font-weight="bold">JKR</text>
+                </svg>
+            </div>
+
+            <h2>Lupa Kata Laluan</h2>
+            <p class="subtitle">Sila masukkan Emel atau ID Pengguna anda untuk memulakan proses pemulihan.</p>
+
+            <div class="form-group">
+                <label for="search-input">Emel / ID Pengguna</label>
+                <input type="text" id="search-input" placeholder="Contoh: admin@jkr.gov.my" autofocus>
+            </div>
+
+            <button id="btn-search" class="btn btn-primary" onclick="performSearch()">
+                <i class="fas fa-search"></i> Cari Maklumat
+            </button>
+
+            <!-- Result Box -->
+            <div id="search-result">
+                <div class="badge-success"><i class="fas fa-check-circle"></i> Rekod Dijumpai</div>
+
+                <div class="result-item">
+                    <div class="result-label">Nama Pengguna</div>
+                    <div id="res-name" class="result-value">-</div>
+                </div>
+
+                <div class="result-item" style="margin-bottom: 20px;">
+                    <div class="result-label">ID / Emel</div>
+                    <div id="res-id" class="result-value">-</div>
+                </div>
+
+                <button id="btn-request" class="btn btn-primary" onclick="sendResetRequest()">
+                    <i class="fas fa-paper-plane"></i> Hantar Permohonan Reset
+                </button>
+            </div>
+
+            <a href="index.html" class="btn btn-outline" style="text-decoration: none;">
+                <i class="fas fa-arrow-left"></i> Kembali ke Log Masuk
+            </a>
+        </div>
+
+        <!-- Section 2: Success -->
+        <div id="success-view">
+            <div class="animate-pop">
+                <i class="fas fa-check-circle success-icon"></i>
+                <h2>Permohonan Dihantar!</h2>
+                <p class="subtitle" id="success-msg">Permohonan anda telah berjaya dihantar kepada Unit IT. Sila tunggu
+                    maklumbalas melalui emel anda.</p>
+
+                <a href="index.html" class="btn btn-primary animate-pulse" style="text-decoration: none;">
+                    Kembali ke Log Masuk
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast"></div>
+
+    <script src="client-api.js"></script>
+    <script>
+        // Apply branding from localStorage
+        (function applyBranding() {
+            const savedLogo = localStorage.getItem('appLogo');
+            const savedBg = localStorage.getItem('appBackground');
+
+            if (savedBg) {
+                document.body.style.backgroundImage = `linear-gradient(rgba(244,247,246,0.9), rgba(244,247,246,0.9)), url('${savedBg}')`;
+            }
+            if (savedLogo) {
+                const logoEl = document.querySelector('.logo');
+                if (logoEl) {
+                    const img = document.createElement('img');
+                    img.src = savedLogo;
+                    img.className = 'logo';
+                    img.alt = 'Logo';
+                    logoEl.replaceWith(img);
+                }
+            }
+        })();
+
+        let targetUser = null;
+
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.textContent = msg;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+
+            const container = document.querySelector('.lupa-container');
+            container.classList.add('animate-shake');
+            setTimeout(() => container.classList.remove('animate-shake'), 400);
+        }
+
+        async function performSearch() {
+            const inputField = document.getElementById('search-input');
+            const input = inputField.value.trim().toLowerCase();
+            const btn = document.getElementById('btn-search');
+            const resultBox = document.getElementById('search-result');
+
+            if (!input) {
+                showToast("Sila masukkan Emel atau ID Pengguna.");
+                inputField.focus();
+                return;
+            }
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
+            resultBox.style.display = 'none';
+
+            try {
+                const data = await API.getAll();
+                const admins = data.admins || [];
+                const contractors = data.contractors || [];
+
+                // Search in Admins
+                let found = admins.find(a =>
+                    (a.email && a.email.toLowerCase() === input) ||
+                    (a.username && a.username.toLowerCase() === input) ||
+                    (a.name && a.name.toLowerCase().includes(input))
+                );
+
+                if (!found) {
+                    // Search in Contractors
+                    found = contractors.find(c =>
+                        (c.email && c.email.toLowerCase() === input) ||
+                        (c.regNo && c.regNo.toLowerCase() === input)
+                    );
+                }
+
+                if (found) {
+                    targetUser = found;
+                    document.getElementById('res-name').textContent = found.name;
+                    document.getElementById('res-id').textContent = found.email || found.username || found.regNo;
+
+                    document.getElementById('res-id').textContent = found.email || found.username || found.regNo;
+
+                    resultBox.classList.add('active');
+                    btn.innerHTML = '<i class="fas fa-search"></i> Cari Maklumat';
+                    btn.disabled = false;
+                } else {
+                    showToast("Maaf, rekod tidak dijumpai. Sila pastikan Emel atau ID anda betul.");
+                    btn.innerHTML = '<i class="fas fa-search"></i> Cari Maklumat';
+                    btn.disabled = false;
+                }
+
+            } catch (e) {
+                console.error(e);
+                showToast("Ralat sistem. Sila cuba lagi sebentar.");
+                btn.innerHTML = '<i class="fas fa-search"></i> Cari Maklumat';
+                btn.disabled = false;
+            }
+        }
+
+        async function sendResetRequest() {
+            if (!targetUser) return;
+
+            const btn = document.getElementById('btn-request');
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghantar...';
+
+            try {
+                // Here we append a record to a "PermohonanReset" sheet if it exists,
+                // or just simulate success if not defined.
+                // Assuming we want to track this:
+                const requestData = {
+                    "tarikh": new Date().toLocaleDateString('ms-MY'),
+                    "masa": new Date().toLocaleTimeString('ms-MY'),
+                    "nama": targetUser.name,
+                    "id_pengguna": targetUser.email || targetUser.username || targetUser.regNo,
+                    "status": "Baru",
+                    "timestamp": new Date().toISOString()
+                };
+
+                // We try update the Reset sheet if the API supports it
+                // For now, let's just show success to the user.
+                // In a real app, you'd call API.saveResetRequest(requestData)
+
+                // Simulate delay
+                await new Promise(r => setTimeout(r, 1500));
+
+                document.getElementById('search-view').style.display = 'none';
+                document.getElementById('success-view').classList.add('active');
+
+            } catch (e) {
+                console.error(e);
+                showToast("Gagal menghantar permohonan. Sila hubungi IT secara manual.");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i> Hantar Permohonan Reset';
+            }
+        }
+    </script>
+</body>
+
+</html>

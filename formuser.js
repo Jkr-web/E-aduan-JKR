@@ -301,21 +301,21 @@ window.renderComplaintForm = function (containerId) {
                     rawPhone = '0' + rawPhone;
                 }
 
-                // 4. Create Complaint Object
+                // 4. Create Complaint Object (Sesuai dengan tajuk Kolum Sheet anda)
                 const newComplaint = {
-                    id: newId,
-                    name: document.getElementById('nama-pengadu').value,
-                    empId: document.getElementById('no-pekerja').value,
-                    phone: rawPhone,
-                    email: document.getElementById('emel-pengadu').value,
-                    dept: document.getElementById('jabatan').value,
-                    location: document.getElementById('lokasi-kerosakan').value,
-                    description: document.getElementById('keterangan-aduan').value,
-                    image: imageLinks.length > 1 ? imageLinks : (imageLinks[0] || ""),
-                    date: document.getElementById('tarikh-aduan').value,
-                    time: document.getElementById('masa-aduan').value,
-                    status: 'Baru',
-                    timestamp: `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
+                    "no. aduan": newId,
+                    "nama": document.getElementById('nama-pengadu').value,
+                    "no. pekerja": document.getElementById('no-pekerja').value,
+                    "no. telefon": rawPhone,
+                    "emel": document.getElementById('emel-pengadu').value,
+                    "jabatan": document.getElementById('jabatan').value,
+                    "lokasi kerosakan": document.getElementById('lokasi-kerosakan').value,
+                    "keterangan aduan": document.getElementById('keterangan-aduan').value,
+                    "gambar": imageLinks.length > 1 ? imageLinks : (imageLinks[0] || ""),
+                    "tarikh aduan": document.getElementById('tarikh-aduan').value,
+                    "masa aduan": document.getElementById('masa-aduan').value,
+                    "status": 'Baru',
+                    "timestamp": `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
                 };
 
                 // 5. Save to Server (Using appendRecord for efficiency)

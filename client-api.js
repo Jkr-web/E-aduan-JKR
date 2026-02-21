@@ -1,5 +1,5 @@
 // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-const API_URL = 'https://script.google.com/macros/s/AKfycbwQh1iH1hj9zJycGqHLMlu3uvXo2k5AN_UFSFlLxilTr66AjTh8a5lvQFyreryHsbBu/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzjLI8-ZpCVdzIghX6F_A7sZyDlO4TbeH3hfTfl30wgnrEIjicHa5JFIMNRrCCGDrgx/exec';
 
 // --- TOKEN KESELAMATAN (Mesti sama dengan di Google Apps Script) ---
 const AUTH_TOKEN = "https://github.com/Jkr-web/E-aduan-JKR";
@@ -188,7 +188,7 @@ const API = {
                 headers: { 'Content-Type': 'text/plain' },
                 redirect: 'follow',
                 mode: 'cors',
-                body: JSON.stringify({ action: 'delete_record' })
+                body: JSON.stringify({ action: 'delete_record', id: id }) // Pastikan body tidak kosong
             });
 
             const text = await res.text();

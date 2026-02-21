@@ -331,31 +331,31 @@ document.addEventListener('DOMContentLoaded', () => {
                 const trData = document.createElement('tr');
                 trData.style.borderTop = '1px solid #eee';
                 trData.innerHTML = `
-                <td data-label="No. Aduan" style="padding: 12px 10px;"><strong>${c.id}</strong></td>
-                <td data-label="Nama" style="padding: 12px 10px;">${c.name}</td>
-                <td data-label="No. Telefon" style="padding: 12px 10px;">${c.phone || '-'}</td>
-                <td data-label="Jabatan" style="padding: 12px 10px;">${c.dept}</td>
-                <td data-label="Keterangan" style="padding: 12px 10px; min-width: 150px; font-size: 0.9rem;" title="${c.description || ''}">${c.description || '-'}</td>
-                <td data-label="Tarikh Aduan" style="padding: 12px 10px;">${formatDisplayDate(c.date)}</td>
-                <td data-label="Catatan Admin" style="padding: 12px 10px; min-width: 120px; font-size: 0.9rem;">${c.adminNotes || '-'}</td>
+                <td data-label="No. Aduan" style="padding: 12px 10px;"><strong>${c['no. aduan'] || c.id || '-'}</strong></td>
+                <td data-label="Nama" style="padding: 12px 10px;">${c['nama'] || c.name || '-'}</td>
+                <td data-label="No. Telefon" style="padding: 12px 10px;">${c['no. telefon'] || c.phone || '-'}</td>
+                <td data-label="Jabatan" style="padding: 12px 10px;">${c['jabatan'] || c.dept || '-'}</td>
+                <td data-label="Keterangan" style="padding: 12px 10px; min-width: 150px; font-size: 0.9rem;" title="${c['keterangan aduan'] || c.description || ''}">${c['keterangan aduan'] || c.description || '-'}</td>
+                <td data-label="Tarikh Aduan" style="padding: 12px 10px;">${formatDisplayDate(c['tarikh aduan'] || c.date)}</td>
+                <td data-label="Catatan Admin" style="padding: 12px 10px; min-width: 120px; font-size: 0.9rem;">${c['catatan admin'] || c.adminNotes || '-'}</td>
                 <td data-label="Status" style="padding: 12px 10px;">
-                    <span style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${c.status}</span>
+                    <span style="background: ${statusColor}; color: white; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600;">${c.status || '-'}</span>
                 </td>
-                <td data-label="Kontraktor" style="padding: 12px 10px;">${c.contractor || '-'}</td>
+                <td data-label="Kontraktor" style="padding: 12px 10px;">${c['kontraktor dilantik'] || c.contractor || '-'}</td>
                 <td data-label="No. Rujukan" style="padding: 12px 10px;">
-                    ${c.contractorRefNo ? `<span style="background:#fffde7; border:1px solid #f39c12; color:#b7791f; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; letter-spacing:0.5px;">${c.contractorRefNo}</span>` : '<span style="color:#ccc;">-</span>'}
+                    ${(c.contractorRefNo || c.contractorRefN) ? `<span style="background:#fffde7; border:1px solid #f39c12; color:#b7791f; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; letter-spacing:0.5px;">${c.contractorRefNo || c.contractorRefN}</span>` : '<span style="color:#ccc;">-</span>'}
                 </td>
                 <td data-label="Tarikh Lantikan" style="padding: 12px 10px; font-size: 11px; color: #666;">
                     ${formatDisplayDate(c['tarikh lantikan'] || c.assignedDate)}
                 </td>
-                <td data-label="Catatan Kontraktor" style="padding: 12px 10px; min-width: 120px;">${c.contractorNotes || '-'}</td>
+                <td data-label="Catatan Kontraktor" style="padding: 12px 10px; min-width: 120px;">${c['catatan kontraktor'] || c.contractorNotes || '-'}</td>
                 <td data-label="Terima" style="padding: 12px 10px; font-size: 11px; color: #666;">
-                    ${c.dateReceived ? formatDisplayDate(c.dateReceived) : '-'}
+                    ${c['tarikh terima'] || c.dateReceived ? formatDisplayDate(c['tarikh terima'] || c.dateReceived) : '-'}
                 </td>
                 <td data-label="Siap" style="padding: 12px 10px; font-size: 11px; color: #666;">
-                    ${c.dateCompleted ? formatDisplayDate(c.dateCompleted) : '-'}
+                    ${c['tarikh siap'] || c.dateCompleted ? formatDisplayDate(c['tarikh siap'] || c.dateCompleted) : '-'}
                 </td>
-                <td data-label="Tempoh" style="padding: 12px 10px; font-weight: 600; color: #34495e;">${c.duration || '-'}</td>
+                <td data-label="Tempoh" style="padding: 12px 10px; font-weight: 600; color: #34495e;">${c['tempoh siap'] || c.duration || '-'}</td>
             `;
                 tableBody.appendChild(trData);
 
@@ -370,15 +370,15 @@ document.addEventListener('DOMContentLoaded', () => {
                         <!-- LEFT SIDE: Main Actions -->
                         <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                             <span style="font-size: 10px; font-weight: 800; color: #95a5a6; text-transform: uppercase;">Aksi:</span>
-                            <button onclick="event.stopPropagation(); editComplaint('${c.id}')" style="padding: 6px 10px; background: #f39c12; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                            <button onclick="event.stopPropagation(); editComplaint('${c['no. aduan'] || c.id}')" style="padding: 6px 10px; background: #f39c12; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
                                 <i class="fas fa-edit"></i> Edit
                             </button>
                             ${hasProgress ? `
-                                <button onclick="event.stopPropagation(); viewProgress('${c.id}')" style="padding: 6px 10px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                                <button onclick="event.stopPropagation(); viewProgress('${c['no. aduan'] || c.id}')" style="padding: 6px 10px; background: #3498db; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
                                     <i class="fas fa-tasks"></i> Progress
                                 </button>
                             ` : ''}
-                            <button onclick="event.stopPropagation(); deleteComplaint('${c.id}')" style="padding: 6px 10px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                            <button onclick="event.stopPropagation(); deleteComplaint('${c['no. aduan'] || c.id}')" style="padding: 6px 10px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
                                 <i class="fas fa-trash"></i> Padam
                             </button>
                         </div>
@@ -421,6 +421,14 @@ document.addEventListener('DOMContentLoaded', () => {
             window.allContractors = data.contractors || [];
             window.allAdmins = data.admins || [];
             window.allSettings = data.settings || {}; // Sync settings too
+
+            // ✅ Sync to localStorage for Fast Branding upon next load
+            if (data.settings) {
+                if (data.settings.appLogo) localStorage.setItem('appLogo', data.settings.appLogo);
+                if (data.settings.appBackground) localStorage.setItem('appBackground', data.settings.appBackground);
+                if (data.settings.systemName) localStorage.setItem('systemName', data.settings.systemName);
+                if (data.settings.fontSize) localStorage.setItem('setting-font-size', data.settings.fontSize);
+            }
 
             // Render all components with pre-fetched data
             renderDashboardStats();
@@ -801,7 +809,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (confirm("Adakah anda pasti mahu memadam aduan ini?")) {
             try {
-                const success = await API.deleteRecord('Aduan', 'id', id);
+                // Gunakan tajuk kunci 'no. aduan' supaya sepadan dengan Sheet anda
+                const success = await API.deleteRecord('Aduan', 'no. aduan', id);
 
                 if (success) {
                     await refreshAllData();

@@ -6,6 +6,49 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Borang Aduan Kerosakan</title>
     <link rel="stylesheet" href="formuser.css">
+    <style>
+        :root {
+            --bg-overlay: rgba(244, 247, 246, 0.9);
+            --bg-image: none;
+        }
+
+        body {
+            background-image: linear-gradient(var(--bg-overlay), var(--bg-overlay)), var(--bg-image) !important;
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+    </style>
+    <!-- Fast Branding Script -->
+    <script>
+        (function () {
+            const savedLogo = localStorage.getItem('appLogo');
+            const savedBg = localStorage.getItem('appBackground');
+            const savedName = localStorage.getItem('systemName');
+
+            if (savedBg) {
+                document.documentElement.style.setProperty('--bg-image', `url('${savedBg}')`);
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                if (savedLogo) {
+                    const logoContainer = document.querySelector('.logo-container');
+                    if (logoContainer) {
+                        const img = document.createElement('img');
+                        img.src = savedLogo;
+                        img.className = 'logo';
+                        img.alt = 'Logo';
+                        logoContainer.innerHTML = '';
+                        logoContainer.appendChild(img);
+                    }
+                }
+                if (savedName) {
+                    const h1 = document.querySelector('header h1');
+                    if (h1) h1.textContent = savedName;
+                }
+            });
+        })();
+    </script>
 </head>
 
 <body>

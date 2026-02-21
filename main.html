@@ -9,6 +9,24 @@
     <link rel="stylesheet" href="admin.css">
     <!-- FontAwesome for icons (Using CDN for simplicity) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- Fast Branding Script -->
+    <script>
+        (function () {
+            const savedName = localStorage.getItem('systemName');
+            const savedLogo = localStorage.getItem('appLogo');
+
+            document.addEventListener('DOMContentLoaded', () => {
+                if (savedName) {
+                    const sidebarTitle = document.getElementById('sidebar-system-name');
+                    if (sidebarTitle) sidebarTitle.textContent = savedName;
+                    const topBarTitle = document.querySelector('.top-bar h3');
+                    if (topBarTitle) topBarTitle.textContent = savedName;
+                }
+                // Admin sidebar usually doesn't have a logo image container by default, 
+                // but we can add one if needed. Monitoring existing structure.
+            });
+        })();
+    </script>
 </head>
 
 <body>

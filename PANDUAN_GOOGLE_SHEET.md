@@ -1,26 +1,23 @@
 /*
 =================================================================
-  PANDUAN GOOGLE APPS SCRIPT - SISTEM E-ADUAN JKR
+  PANDUAN GOOGLE APPS SCRIPT - SISTEM E-ADUAN JKR (VERSI BM)
 =================================================================
 
-  ⚠️  PENTING: STRUKTUR HEADER SHEET "Aduan" MESTI MENGIKUT URUTAN:
-  id | name | empId | phone | email | dept | location | date | time |
-  description | image | adminNotes | status | contractor |
-  contractorRefNo | tarikh lantikan | assignedDate | assignedBy |
-  taskDescription | contractorNotes | dateReceived | dateCompleted |
-  duration | progress | isVerified | verifiedDate | timestamp
-
-  ➡️  Pastikan kolum "contractorRefNo" wujud dalam Sheet "Aduan"
-      untuk menyimpan No. Aduan / Rujukan dari pihak Kontraktor.
+  ⚠️  PENTING: STRUKTUR HEADER SHEET "Aduan" (IKUT URUTAN BM):
+  no. aduan | tarikh aduan | masa aduan | nama | no. pekerja | 
+  no. telefon | emel | jabatan | lokasi kerosakan | keterangan aduan | 
+  gambar | status | timestamp | kontraktor dilantik | tarikh lantikan | 
+  catatan admin | catatan kontraktor | keterangan tugasan | 
+  tarikh terima | tarikh siap | tempoh siap | isVerified | 
+  verifiedDate | assignedBy | progress | contractorRefNo
 
 =================================================================
 */
 
 // --- KONFIGURASI KESELAMATAN ---
-const AUTH_TOKEN = "https://github.com/Jkr-web/E-aduan-JKR"; // Mesti sama dengan di client-api.js
+const AUTH_TOKEN = "https://github.com/Jkr-web/E-aduan-JKR";
 const ALLOWED_ORIGINS = ["https://webmaker.github.io", "http://127.0.0.1", "http://localhost"];
 const FOLDER_ID = "1UqG08-eXQ2_au3gwarKm88IQTOCsG0W8";
-
 
 /**
  * MENGAMBIL DATA (READ)
@@ -64,13 +61,13 @@ function doPost(e) {
       return createJsonResponse({ status: 'success', url: url });
     }
 
-    // 2. UPDATE RECORD (Termasuk Automatik Cleanup Fail)
+    // 2. UPDATE RECORD
     if (action === 'update_record') {
       const success = updateSingleRecord(ss, e.parameter.sheet, e.parameter.id, e.parameter.key, postData);
       return createJsonResponse({ status: success ? 'success' : 'error' });
     }
 
-    // 3. DELETE RECORD (Termasuk Automatik Cleanup Fail)
+    // 3. DELETE RECORD
     if (action === 'delete_record') {
       cleanupFilesByRecord(ss, e.parameter.sheet, e.parameter.id, e.parameter.key);
       const success = deleteSingleRecord(ss, e.parameter.sheet, e.parameter.id, e.parameter.key);
@@ -90,7 +87,8 @@ function doPost(e) {
       const lastCol = sheet.getLastColumn();
       const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
       const newRow = headers.map(h => {
-        let val = postData[h.toLowerCase().trim()] || postData[h];
+        let hClean = h.toString().toLowerCase().trim();
+        let val = postData[h] !== undefined ? postData[h] : postData[hClean];
         if (typeof val === 'object' && val !== null) val = JSON.stringify(val);
         return (val === undefined || val === null) ? "" : val;
       });
@@ -108,9 +106,6 @@ function doPost(e) {
 
 // --- FUNGSI DRIVE COMMANDS (CLEANUP LOGIC) ---
 
-/**
- * Memadam fail tunggal berdasarkan URL Drive
- */
 function deleteFileFromDrive(url) {
   if (!url || typeof url !== 'string' || !url.includes('drive.google.com')) return false;
   try {
@@ -120,20 +115,14 @@ function deleteFileFromDrive(url) {
     } else if (url.includes("/d/")) {
       fileId = url.split("/d/")[1].split("/")[0];
     }
-    
     if (fileId) {
       DriveApp.getFileById(fileId).setTrashed(true);
       return true;
     }
-  } catch (e) {
-    console.warn("Delete Error: " + e.toString());
-  }
+  } catch (e) { console.warn("Delete Error: " + e.toString()); }
   return false;
 }
 
-/**
- * Membersihkan fail Drive apabila sesuatu rekod dipadam
- */
 function cleanupFilesByRecord(ss, sheetName, idValue, keyName) {
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) return;
@@ -146,10 +135,8 @@ function cleanupFilesByRecord(ss, sheetName, idValue, keyName) {
     if (data[i][idx].toString().trim() === idValue.toString().trim()) {
       const row = data[i];
       headers.forEach((h, hIdx) => {
-        // Cari kolum yang mengandungi imej
         if (h.includes('gambar') || h.includes('image') || h.includes('progress')) {
-          const val = row[hIdx];
-          processAndCleanupFiles(val); // Padam semua fail dalam kolum ini
+          processAndCleanupFiles(row[hIdx]); 
         }
       });
       break;
@@ -157,9 +144,6 @@ function cleanupFilesByRecord(ss, sheetName, idValue, keyName) {
   }
 }
 
-/**
- * Bandingkan senarai URL lama dan baru, padam fail yang telah dibuang
- */
 function processAndCleanupFiles(oldValue, newValue) {
   const extractUrls = (val) => {
     if (!val) return [];
@@ -169,82 +153,61 @@ function processAndCleanupFiles(oldValue, newValue) {
         try {
           const p = JSON.parse(val);
           if (Array.isArray(p)) urls = p;
-          else if (typeof p === 'object') findUrlsInObject(p, urls);
         } catch(e){}
-      } else if (val.includes('drive.google.com')) {
-        urls = [val];
-      }
-    } else if (Array.isArray(val)) {
-      urls = val;
-    } else if (typeof val === 'object' && val !== null) {
-      findUrlsInObject(val, urls);
-    }
+      } else if (val.includes('drive.google.com')) { urls = [val]; }
+    } else if (Array.isArray(val)) { urls = val; }
     return urls.filter(u => typeof u === 'string' && u.includes('drive.google.com'));
   };
 
   const oldUrls = extractUrls(oldValue);
   const newUrls = newValue ? extractUrls(newValue) : [];
-
-  // Padam hanya URL yang ada dalam rekod lama tetapi TIADA dalam rekod baru
-  oldUrls.forEach(u => {
-    if (!newUrls.includes(u)) {
-      deleteFileFromDrive(u);
-    }
-  });
+  oldUrls.forEach(u => { if (!newUrls.includes(u)) deleteFileFromDrive(u); });
 }
 
-function findUrlsInObject(obj, urls) {
-  for (let k in obj) {
-    let v = obj[k];
-    if (typeof v === 'string' && v.includes('drive.google.com')) {
-      urls.push(v);
-    } else if (typeof v === 'object' && v !== null) {
-      findUrlsInObject(v, urls);
-    }
-  }
-}
+// --- FUNGSI TERAS REKOD (VERSI ROBUST BM) ---
 
-// --- FUNGSI TERAS LAIN ---
-
-function updateSingleRecord(ss, sheetName, idValue, keyName, updatedData) {
+function updateSingleRecord(ss, sheetName, idValue, keyName, data) {
   const sheet = ss.getSheetByName(sheetName);
   if (!sheet) return false;
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(h => h.toString().toLowerCase().trim());
-  const idIndex = headers.indexOf(keyName.toLowerCase().trim());
-  if (idIndex === -1) return false;
-  
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][idIndex].toString().trim() === idValue.toString().trim()) {
-      const originalHeaders = data[0];
-      const newRow = originalHeaders.map((h, idx) => {
-        const hLow = h.toLowerCase().trim();
-        const key = Object.keys(updatedData).find(k => k.toLowerCase().trim() === hLow);
-        let val = (key !== undefined) ? updatedData[key] : data[i][idx];
-        
-        // PENTING: Jika kolum imej dikemaskini, lakukan pembersihan Drive
-        if (key !== undefined && (hLow.includes('gambar') || hLow.includes('image') || hLow.includes('progress'))) {
-           processAndCleanupFiles(data[i][idx], val);
-        }
+  const values = sheet.getDataRange().getValues();
+  const headers = values[0];
+  const headersLower = headers.map(h => h.toString().toLowerCase().trim());
+  const keyIdx = headersLower.indexOf(keyName.toLowerCase().trim());
+  if (keyIdx === -1) return false;
 
-        if (typeof val === 'object' && val !== null) val = JSON.stringify(val);
-        return (val === null) ? '' : val;
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][keyIdx].toString().trim() === idValue.toString().trim()) {
+      headers.forEach((h, j) => {
+        const hLow = h.toString().toLowerCase().trim();
+        let val = data[h] !== undefined ? data[h] : data[hLow];
+        if (val !== undefined) {
+          if (hLow.includes('gambar') || hLow.includes('image') || hLow.includes('progress')) {
+            processAndCleanupFiles(values[i][j], val);
+          }
+          if (typeof val === 'object' && val !== null) val = JSON.stringify(val);
+          sheet.getRange(i + 1, j + 1).setValue(val);
+        }
       });
-      sheet.getRange(i + 1, 1, 1, originalHeaders.length).setValues([newRow]);
       return true;
     }
   }
   return false;
 }
 
-function uploadToDrive(fileName, base64Data) {
-  const folder = DriveApp.getFolderById(FOLDER_ID);
-  const contentType = base64Data.substring(5, base64Data.indexOf(';'));
-  const bytes = Utilities.base64Decode(base64Data.split(',')[1]);
-  const blob = Utilities.newBlob(bytes, contentType, fileName);
-  const file = folder.createFile(blob);
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return "https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1000";
+function deleteSingleRecord(ss, sheetName, idValue, keyName) {
+  const sheet = ss.getSheetByName(sheetName);
+  if (!sheet) return false;
+  const data = sheet.getDataRange().getValues();
+  const headers = data[0].map(h => h.toString().toLowerCase().trim());
+  const idx = headers.indexOf(keyName.toLowerCase().trim());
+  if (idx === -1) return false;
+  for (let i = 1; i < data.length; i++) {
+    if (data[i][idx].toString().trim() === idValue.toString().trim()) {
+      sheet.deleteRow(i + 1);
+      return true;
+    }
+  }
+  return false;
 }
 
 function getSheetData(ss, sheetName) {
@@ -265,20 +228,14 @@ function getSheetData(ss, sheetName) {
   });
 }
 
-function deleteSingleRecord(ss, sheetName, idValue, keyName) {
-  const sheet = ss.getSheetByName(sheetName);
-  if (!sheet) return false;
-  const data = sheet.getDataRange().getValues();
-  const headers = data[0].map(h => h.toString().toLowerCase().trim());
-  const idx = headers.indexOf(keyName.toLowerCase().trim());
-  if (idx === -1) return false;
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][idx].toString().trim() === idValue.toString().trim()) {
-      sheet.deleteRow(i + 1);
-      return true;
-    }
-  }
-  return false;
+function uploadToDrive(fileName, base64Data) {
+  const folder = DriveApp.getFolderById(FOLDER_ID);
+  const contentType = base64Data.substring(5, base64Data.indexOf(';'));
+  const bytes = Utilities.base64Decode(base64Data.split(',')[1]);
+  const blob = Utilities.newBlob(bytes, contentType, fileName);
+  const file = folder.createFile(blob);
+  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+  return "https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1000";
 }
 
 function isValidRequest(e) { return (e.parameter.token && e.parameter.token === AUTH_TOKEN); }
@@ -292,66 +249,19 @@ function getSettingsData(ss, sheetName) {
   return settings;
 }
 
-// =====================================================================
-// 🔧 FUNGSI PERSEDIAAN SHEET (Jalankan SEKALI dari Apps Script Editor)
-// =====================================================================
-//
-//  Cara Guna:
-//  1. Buka Google Apps Script Editor
-//  2. Pilih fungsi "setupSheetHeaders" dari dropdown
-//  3. Tekan butang ▶ Run
-//  4. Semua kolum yang diperlukan akan ditambah secara automatik
-//     (data sedia ada TIDAK akan dipadam)
-//
-// =====================================================================
-
 /**
- * Pastikan semua kolum yang diperlukan wujud dalam Sheet "Aduan".
- * Kolum "contractorRefNo" akan ditambah jika belum wujud.
+ * Pastikan semua kolum yang diperlukan wujud (Jalankan Sekali)
  */
 function setupSheetHeaders() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName('Aduan');
-  if (!sheet) {
-    SpreadsheetApp.getUi().alert('Sheet "Aduan" tidak dijumpai!');
-    return;
-  }
-
-  // Senarai penuh kolum yang diperlukan (mengikut urutan)
-  const REQUIRED_HEADERS = [
-    'id', 'name', 'empId', 'phone', 'email', 'dept', 'location',
-    'date', 'time', 'description', 'image', 'adminNotes', 'status',
-    'contractor', 'contractorRefNo',          // ← KOLUM BARU
-    'tarikh lantikan', 'assignedDate', 'assignedBy',
-    'taskDescription', 'contractorNotes',
-    'dateReceived', 'dateCompleted', 'duration',
-    'progress', 'isVerified', 'verifiedDate', 'timestamp'
-  ];
-
-  const lastCol = sheet.getLastColumn();
-  const existingHeaders = lastCol > 0
-    ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].map(h => h.toString().toLowerCase().trim())
-    : [];
-
-  let added = [];
-
-  REQUIRED_HEADERS.forEach(header => {
-    const lowerH = header.toLowerCase().trim();
-    if (!existingHeaders.includes(lowerH)) {
-      // Tambah kolum baru di hujung
-      const newCol = sheet.getLastColumn() + 1;
-      sheet.getRange(1, newCol).setValue(header);
-      // Style header baru
-      sheet.getRange(1, newCol).setBackground('#fff9c4').setFontWeight('bold');
-      existingHeaders.push(lowerH);
-      added.push(header);
+  const REQUIRED = ['no. aduan', 'tarikh aduan', 'masa aduan', 'nama', 'no. pekerja', 'no. telefon', 'emel', 'jabatan', 'lokasi kerosakan', 'keterangan aduan', 'gambar', 'status', 'timestamp', 'kontraktor dilantik', 'tarikh lantikan', 'catatan admin', 'catatan kontraktor', 'keterangan tugasan', 'tarikh terima', 'tarikh siap', 'tempoh siap', 'isVerified', 'verifiedDate', 'assignedBy', 'progress', 'contractorRefNo'];
+  
+  const existing = sheet.getLastColumn() > 0 ? sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(h => h.toString().toLowerCase().trim()) : [];
+  REQUIRED.forEach(h => {
+    if (!existing.includes(h)) {
+      sheet.getRange(1, sheet.getLastColumn() + 1).setValue(h).setBackground('#fff9c4').setFontWeight('bold');
     }
   });
-
-  if (added.length > 0) {
-    SpreadsheetApp.getUi().alert('✅ Berjaya! Kolum baru ditambah:\n' + added.join(', '));
-    Logger.log('Kolum ditambah: ' + added.join(', '));
-  } else {
-    SpreadsheetApp.getUi().alert('✅ Semua kolum sudah wujud. Tiada perubahan diperlukan.');
-  }
+  SpreadsheetApp.getUi().alert('✅ Selesai mengemaskini tajuk kolum!');
 }

@@ -5,17 +5,60 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Sistem Aduan - Log Masuk</title>
+    <!-- FontAwesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
+        :root {
+            --bg-overlay: rgba(244, 247, 246, 0.85);
+            --bg-image: none;
+        }
+
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background-color: #f4f7f6;
+            background-image: linear-gradient(var(--bg-overlay), var(--bg-overlay)), var(--bg-image);
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
             margin: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
         }
+    </style>
 
+    <!-- Fast Branding Script -->
+    <script>
+        (function () {
+            const savedLogo = localStorage.getItem('appLogo');
+            const savedBg = localStorage.getItem('appBackground');
+            const savedName = localStorage.getItem('systemName');
+
+            if (savedBg) {
+                document.documentElement.style.setProperty('--bg-image', `url('${savedBg}')`);
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                if (savedLogo) {
+                    const logoEl = document.querySelector('.logo');
+                    if (logoEl) {
+                        const img = document.createElement('img');
+                        img.src = savedLogo;
+                        img.className = 'logo';
+                        img.alt = 'Logo';
+                        logoEl.replaceWith(img);
+                    }
+                }
+                if (savedName) {
+                    const h2 = document.querySelector('.login-container h2');
+                    if (h2) h2.textContent = savedName;
+                }
+            });
+        })();
+    </script>
+
+    <style>
         .login-container {
             background-color: #fff;
             padding: 40px;
@@ -122,6 +165,30 @@
             background-color: #004494;
         }
 
+        /* Password Show/Hide Styling */
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper input {
+            padding-right: 40px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 12px;
+            cursor: pointer;
+            color: #7f8c8d;
+            transition: color 0.2s;
+            z-index: 10;
+        }
+
+        .toggle-password:hover {
+            color: #2c3e50;
+        }
+
         .footer-links {
             margin-top: 20px;
             font-size: 14px;
@@ -134,6 +201,71 @@
 
         .hidden {
             display: none;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-card {
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+            animation: modalPop 0.3s ease-out;
+        }
+
+        @keyframes modalPop {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        .modal-card i {
+            font-size: 3rem;
+            color: #f39c12;
+            margin-bottom: 15px;
+        }
+
+        .modal-card h3 {
+            margin: 0 0 10px 0;
+            color: #2c3e50;
+        }
+
+        .modal-card p {
+            color: #7f8c8d;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+
+        .modal-btn {
+            background: #0056b3;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
         }
     </style>
 </head>
@@ -163,11 +295,15 @@
         <form id="admin-login-form" onsubmit="handleLogin(event, 'admin')">
             <div class="form-group">
                 <label for="admin-email">Emel / ID Pengguna</label>
-                <input type="text" id="admin-email" placeholder="admin@jkr.gov.my" required>
+                <input type="text" id="admin-email" placeholder="Masukkan Emel Rasmi (admin@jkr.gov.my)" required>
             </div>
             <div class="form-group">
                 <label for="admin-password">Kata Laluan</label>
-                <input type="password" id="admin-password" placeholder="••••••••" required>
+                <div class="password-wrapper">
+                    <input type="password" id="admin-password" placeholder="••••••••" required>
+                    <i class="fas fa-eye toggle-password"
+                        onclick="togglePasswordVisibility('admin-password', this)"></i>
+                </div>
             </div>
             <button type="submit" class="login-btn">Log Masuk Admin</button>
         </form>
@@ -176,21 +312,23 @@
         <form id="contractor-login-form" class="hidden" onsubmit="handleLogin(event, 'contractor')">
             <div class="form-group">
                 <label for="contractor-id">Emel Syarikat</label>
-                <input type="email" id="contractor-id" placeholder="Contoh: syarikat@gmail.com" required>
+                <input type="email" id="contractor-id" placeholder="Masukkan Emel Syarikat Berdaftar" required>
             </div>
             <div class="form-group">
                 <label for="contractor-password">Kata Laluan</label>
-                <input type="password" id="contractor-password" placeholder="••••••••" required>
+                <div class="password-wrapper">
+                    <input type="password" id="contractor-password" placeholder="••••••••" required>
+                    <i class="fas fa-eye toggle-password"
+                        onclick="togglePasswordVisibility('contractor-password', this)"></i>
+                </div>
             </div>
             <button type="submit" class="login-btn" style="background-color: #28a745;">Log Masuk Syarikat</button>
         </form>
 
         <div class="footer-links">
             <p><a href="formuser.html" style="color: #666; font-size: 0.9em;">Pergi ke Borang Aduan Awam</a></p>
-            <p><a href="#">Lupa Kata Laluan?</a></p>
+            <p><a href="lupa-katalaluan.html">Lupa Kata Laluan?</a></p>
         </div>
-    </div>
-
     </div>
 
     <script src="client-api.js"></script>
@@ -204,6 +342,19 @@
                 window.location.href = 'kontraktor.html';
             }
         })();
+
+        function togglePasswordVisibility(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
 
         function switchLogin(type) {
             const adminForm = document.getElementById('admin-login-form');
@@ -229,8 +380,8 @@
 
             const btn = event.target.querySelector('button');
             const originalText = btn.textContent;
-
             const inputs = event.target.querySelectorAll('input');
+
             const emailInput = inputs[0].value.trim();
             const passwordInput = inputs[1].value.trim();
 
@@ -302,39 +453,7 @@
         }
     </script>
 
-    <!-- Auto-apply Branding from Settings -->
-    <script>
-        (function applyBranding() {
-            // Apply custom logo
-            const savedLogo = localStorage.getItem('appLogo');
-            if (savedLogo) {
-                const logoEl = document.querySelector('.logo');
-                if (logoEl) {
-                    const img = document.createElement('img');
-                    img.src = savedLogo;
-                    img.className = 'logo'; // Keep the styling
-                    img.alt = 'Logo';
-                    logoEl.replaceWith(img);
-                }
-            }
-
-            // Apply custom background
-            const savedBg = localStorage.getItem('appBackground');
-            if (savedBg) {
-                document.body.style.backgroundImage = `linear-gradient(rgba(244,247,246,0.85), rgba(244,247,246,0.85)), url('${savedBg}')`;
-                document.body.style.backgroundSize = 'cover';
-                document.body.style.backgroundPosition = 'center';
-                document.body.style.backgroundAttachment = 'fixed';
-            }
-
-            // Apply custom system name
-            const systemName = localStorage.getItem('systemName');
-            if (systemName) {
-                const h2 = document.querySelector('.login-container h2');
-                if (h2) h2.textContent = systemName;
-            }
-        })();
-    </script>
+    <!-- Branding applied in head for speed -->
 
 </body>
 
