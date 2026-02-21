@@ -101,18 +101,21 @@ window.renderComplaintForm = function (containerId) {
             <p class="note" style="text-align: center; margin-top: 10px;">Nota: Sila pastikan semua maklumat adalah benar.</p>
         </form>
 
-        <!-- Success Modal -->
-        <div id="success-modal" class="modal">
-            <div class="modal-content">
-                <!-- Smile Animation SVG -->
-                <svg class="smile-anim" viewBox="0 0 100 100">
-                    <circle class="circle" cx="50" cy="50" r="45" />
-                    <path class="smile" d="M30 60 Q50 80 70 60" />
-                </svg>
-                <h2>Berjaya!</h2>
-                <p>Aduan telah dihantar.</p>
-                <div id="complaint-id" style="font-weight: bold; font-size: 1.2em; color: #28a745; margin-top: 10px; margin-bottom: 20px;"></div>
-                <button id="close-modal-btn" style="width: 100%; padding: 10px; background-color: #0056b3; color: white; border: none; border-radius: 4px; cursor: pointer;">Tutup</button>
+        <!-- Success Modal (Premium) -->
+        <div id="success-modal" class="modal" style="display: none; position: fixed; z-index: 5000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(8px); justify-content: center; align-items: center;">
+            <div class="modal-content" style="background: white; width: 90%; max-width: 400px; padding: 40px 25px; border-radius: 20px; text-align: center; box-shadow: 0 20px 40px rgba(0,0,0,0.15); animation: fadeUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);">
+                <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #2ecc71, #27ae60); border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 8px 25px rgba(46,204,113,0.4);">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <h2 style="margin: 0 0 10px 0; color: #1a202c; font-size: 1.6rem; font-weight: 800;">Aduan Berjaya!</h2>
+                <p style="color: #636e72; line-height: 1.5; margin: 0 0 20px 0; font-size: 0.95rem;">Terima kasih. Aduan anda telah berjaya direkodkan.</p>
+                <div style="background: #ebf8f2; border: 1px dashed #a7f3d0; border-radius: 12px; padding: 15px; margin-bottom: 25px;">
+                    <div style="font-size: 0.75rem; color: #6b7280; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">No. Rujukan Aduan</div>
+                    <div id="complaint-id" style="font-size: 1.3rem; font-weight: 900; color: #065f46; margin-top: 5px; letter-spacing: 1px;">-</div>
+                </div>
+                <button id="close-modal-btn" style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; border: none; padding: 14px 30px; border-radius: 50px; cursor: pointer; font-weight: 700; width: 100%; font-size: 1rem; box-shadow: 0 4px 15px rgba(52,152,219,0.4); transition: transform 0.2s;">Tutup & Kembali</button>
             </div>
         </div>
     `;
@@ -248,14 +251,16 @@ window.renderComplaintForm = function (containerId) {
                 const fileInput = document.getElementById('gambar');
                 let imageLinks = [];
 
-                // Show Loading Overlay
                 const overlay = document.getElementById('loading-overlay');
                 const percentEl = document.getElementById('loading-percentage');
                 const textEl = document.getElementById('loading-text');
 
-                if (overlay) overlay.style.display = 'flex';
+                // ONLY show the intrusive full screen loading if there are files to upload
+                const hasFiles = fileInput && fileInput.files.length > 0;
 
-                if (fileInput && fileInput.files.length > 0) {
+                if (hasFiles) {
+                    if (overlay) overlay.style.display = 'flex';
+
                     const totalFiles = fileInput.files.length;
                     const progressContainer = document.getElementById('upload-progress-container');
                     const progressBar = document.getElementById('upload-progress-bar');
@@ -294,13 +299,7 @@ window.renderComplaintForm = function (containerId) {
                     if (percentEl) percentEl.textContent = `100%`;
                     if (progressBar) progressBar.style.width = `100%`;
                     setTimeout(() => { if (progressContainer) progressContainer.style.display = 'none'; }, 500);
-                }
-
-                if (textEl) textEl.textContent = "Menghantar Aduan...";
-                if (percentEl) {
-                    percentEl.textContent = "95%";
-                    const progressBar = document.getElementById('upload-progress-bar');
-                    if (progressBar) progressBar.style.width = "95%";
+                    if (textEl) textEl.textContent = "Menghantar Aduan...";
                 }
 
                 let rawPhone = document.getElementById('no-telefon').value.trim();
@@ -308,7 +307,7 @@ window.renderComplaintForm = function (containerId) {
                     rawPhone = '0' + rawPhone;
                 }
 
-                // 4. Create Complaint Object (Sesuai dengan tajuk Kolum Sheet anda)
+                // 4. Create Complaint Object
                 const newComplaint = {
                     "no. aduan": newId,
                     "nama": document.getElementById('nama-pengadu').value,
@@ -325,24 +324,42 @@ window.renderComplaintForm = function (containerId) {
                     "timestamp": `${new Date().toLocaleDateString('en-CA')} ${new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}`
                 };
 
-                // 5. Save to Server (Using appendRecord for efficiency)
+                // 5. Save to Server
                 const success = await API.appendRecord('Aduan', newComplaint);
 
                 if (success) {
-                    // Send Notification to Admins
-                    await API.sendNotification('new_complaint', {
+                    // Send Notification to Admins (don't await to avoid blocking UI)
+                    API.sendNotification('new_complaint', {
                         complaintId: newId,
                         name: newComplaint["nama"],
                         location: newComplaint["lokasi kerosakan"],
                         description: newComplaint["keterangan aduan"]
                     });
 
-                    if (percentEl) percentEl.textContent = "100%";
-                    if (overlay) setTimeout(() => { overlay.style.display = 'none'; }, 500);
+                    // Hide overlay if it was shown
+                    if (hasFiles && overlay) {
+                        overlay.style.opacity = '0';
+                        setTimeout(() => {
+                            overlay.style.display = 'none';
+                            overlay.style.opacity = '1';
+                        }, 300);
+                    }
 
-                    // Update Modal Content with correct ID
+                    // Reset button
+                    setLoading(submitBtn, false);
+
+                    // Update Modal Content & Show Success
                     if (complaintIdDisplay) complaintIdDisplay.textContent = newId;
-                    if (successModal) successModal.style.display = 'flex';
+                    if (successModal) {
+                        successModal.style.display = 'flex';
+                        // Add pop animation effect
+                        const content = successModal.querySelector('.modal-content');
+                        if (content) {
+                            content.style.animation = 'none';
+                            content.offsetHeight; // trigger reflow
+                            content.style.animation = 'fadeUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)';
+                        }
+                    }
 
                     resetForm();
                 } else {
@@ -352,7 +369,10 @@ window.renderComplaintForm = function (containerId) {
             } catch (err) {
                 console.error("Submission failed: ", err);
                 const overlay = document.getElementById('loading-overlay');
-                if (overlay) overlay.style.display = 'none';
+                if (overlay) {
+                    overlay.style.display = 'none';
+                    overlay.style.opacity = '1';
+                }
 
                 alert("Ralat: " + err.message + "\n\nSila pastikan sambungan internet stabil dan saiz gambar tidak terlalu besar.");
                 setLoading(submitBtn, false);

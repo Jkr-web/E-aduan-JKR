@@ -360,7 +360,7 @@
             <div class="form-group">
                 <label for="admin-email">Emel / ID Pengguna</label>
                 <input type="text" id="admin-email" placeholder="Masukkan Emel Rasmi (admin@jkr.gov.my)" required>
-                <div id="admin-email-error" class="error-msg">Emel tidak dijumpai dalam pangkalan data.</div>
+                <div id="admin-email-error" class="error-msg">Emel atau ID pengguna tidak dijumpai.</div>
             </div>
             <div class="form-group">
                 <label for="admin-password">Kata Laluan</label>
@@ -382,9 +382,9 @@
         <div id="contractor-attempts" class="attempts-counter"></div>
         <form id="contractor-login-form" class="hidden" onsubmit="handleLogin(event, 'contractor')">
             <div class="form-group">
-                <label for="contractor-id">Emel Syarikat</label>
-                <input type="email" id="contractor-id" placeholder="Masukkan Emel Syarikat Berdaftar" required>
-                <div id="contractor-email-error" class="error-msg">Emel syarikat tidak dijumpai.</div>
+                <label for="contractor-id">Emel / ID Syarikat</label>
+                <input type="text" id="contractor-id" placeholder="Masukkan Emel / Username Syarikat" required>
+                <div id="contractor-email-error" class="error-msg">Emel atau ID syarikat tidak dijumpai.</div>
             </div>
             <div class="form-group">
                 <label for="contractor-password">Kata Laluan</label>

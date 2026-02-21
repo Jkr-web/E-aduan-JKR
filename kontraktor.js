@@ -354,7 +354,7 @@ window.loadContractorDashboard = async function (contractorName, useCacheOnly = 
 
         // FILTER: Only show complaints assigned to this contractor
         const myTasks = allComplaints.filter(c => {
-            const assignedContractor = (c.contractor || c.Kontraktor || "").toString().toLowerCase().trim();
+            const assignedContractor = (c['kontraktor dilantik'] || c.contractor || c.Kontraktor || "").toString().toLowerCase().trim();
             const targetName = (contractorName || "").toString().toLowerCase().trim();
             return assignedContractor === targetName;
         });
@@ -411,11 +411,42 @@ window.loadContractorDashboard = async function (contractorName, useCacheOnly = 
 // --- Fast Loading Strategy ---
 async function initContractorApp() {
     const userName = localStorage.getItem('userName');
-    // 1. Instant Load from Cache
-    await loadContractorDashboard(userName, true);
+    const overlay = document.getElementById('loading-overlay');
+    const percentEl = document.getElementById('loading-percentage');
+    const textEl = document.getElementById('loading-text');
 
-    // 2. Background Sync from Server (Silent)
-    loadContractorDashboard(userName, false);
+    try {
+        // Show loading
+        if (overlay) overlay.style.display = 'flex';
+        if (percentEl) percentEl.textContent = '30%';
+        if (textEl) textEl.textContent = 'Memuatkan Data...';
+
+        // 1. Instant Load from Cache
+        await loadContractorDashboard(userName, true);
+
+        if (percentEl) percentEl.textContent = '70%';
+        if (textEl) textEl.textContent = 'Menyegarkan Data Terkini...';
+
+        // 2. Background Sync from Server (Silent)
+        await loadContractorDashboard(userName, false);
+
+        if (percentEl) percentEl.textContent = '100%';
+        if (textEl) textEl.textContent = 'Selesai!';
+
+    } catch (err) {
+        console.error("InitContractorApp Error:", err);
+    } finally {
+        // Always hide loading overlay
+        if (overlay) {
+            setTimeout(() => {
+                overlay.style.opacity = '0';
+                setTimeout(() => {
+                    overlay.style.display = 'none';
+                    overlay.style.opacity = '1';
+                }, 500);
+            }, 300);
+        }
+    }
 }
 
 // Replace the direct call in DOMContentLoaded with initContractorApp
@@ -598,10 +629,25 @@ function renderTaskTable(tasks) {
     });
 }
 
-// Clock In Function
-// Clock In Function
+// Clock In Function (No confirmation, animated)
 window.clockIn = async function (id) {
-    if (!confirm("Adakah anda pasti mahu memulakan tugasan ini (Clock In)?")) return;
+    // Find the button that was clicked and animate it
+    const allBtns = document.querySelectorAll('button');
+    let clickedBtn = null;
+    allBtns.forEach(btn => {
+        if (btn.onclick && btn.getAttribute('onclick') && btn.getAttribute('onclick').includes(`clockIn('${id}')`)) {
+            clickedBtn = btn;
+        }
+    });
+
+    // Animate button to loading state
+    if (clickedBtn) {
+        clickedBtn.disabled = true;
+        clickedBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+        clickedBtn.style.background = 'linear-gradient(135deg, #f39c12, #e67e22)';
+        clickedBtn.style.transform = 'scale(0.95)';
+        clickedBtn.style.transition = 'all 0.3s ease';
+    }
 
     try {
         const data = await API.getAll();
@@ -620,15 +666,54 @@ window.clockIn = async function (id) {
 
             await API.updateRecord('Aduan', 'no. aduan', id, complaints[index]);
 
-            // Show success
-            alert(`Clock In Berjaya: Tugasan ${id} kini Sedang Dibaiki Oleh Kontraktor.`);
-            loadContractorDashboard(localStorage.getItem('userName'));
+            // Animate button to success state
+            if (clickedBtn) {
+                clickedBtn.innerHTML = '<i class="fas fa-check-circle"></i> Clock In Berjaya!';
+                clickedBtn.style.background = 'linear-gradient(135deg, #2ecc71, #27ae60)';
+                clickedBtn.style.transform = 'scale(1.05)';
+                clickedBtn.style.boxShadow = '0 4px 15px rgba(46,204,113,0.4)';
+            }
+
+            // Play sound
+            if (typeof playNotificationSound === 'function') playNotificationSound(true);
+
+            // Delay then refresh
+            setTimeout(() => {
+                loadContractorDashboard(localStorage.getItem('userName'));
+            }, 1200);
+
         } else {
-            alert("Tugasan tidak dijumpai.");
+            // Not found - revert button
+            if (clickedBtn) {
+                clickedBtn.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Tidak Dijumpai';
+                clickedBtn.style.background = '#e74c3c';
+            }
+            setTimeout(() => {
+                if (clickedBtn) {
+                    clickedBtn.disabled = false;
+                    clickedBtn.innerHTML = '<i class="fas fa-clock"></i> Clock In';
+                    clickedBtn.style.background = '#27ae60';
+                    clickedBtn.style.transform = 'scale(1)';
+                    clickedBtn.style.boxShadow = 'none';
+                }
+            }, 2000);
         }
     } catch (e) {
         console.error("Clock In API Error:", e);
-        alert("Gagal mengemaskini status. Sila cuba lagi.");
+        // Error - revert button
+        if (clickedBtn) {
+            clickedBtn.innerHTML = '<i class="fas fa-exclamation-circle"></i> Ralat!';
+            clickedBtn.style.background = '#e74c3c';
+        }
+        setTimeout(() => {
+            if (clickedBtn) {
+                clickedBtn.disabled = false;
+                clickedBtn.innerHTML = '<i class="fas fa-clock"></i> Clock In';
+                clickedBtn.style.background = '#27ae60';
+                clickedBtn.style.transform = 'scale(1)';
+                clickedBtn.style.boxShadow = 'none';
+            }
+        }, 2000);
     }
 }
 
@@ -741,8 +826,14 @@ window.openUpdateModal = async function (id) {
         renderPreview('preview-during', currentTaskImages.during, 'during');
 
         // After
-        document.getElementById('notes-after').value = progress.after?.notes || complaint['catatan kontraktor'] || '';
+        document.getElementById('notes-after').value = progress.after?.notes || '';
         renderPreview('preview-after', currentTaskImages.after, 'after');
+
+        // Overall Contractor Notes
+        const notesOverallEl = document.getElementById('contractor-notes');
+        if (notesOverallEl) {
+            notesOverallEl.value = complaint['catatan kontraktor'] || complaint.contractorNotes || '';
+        }
 
         // Visibility of Complete Button
         const btnComplete = document.getElementById('btn-complete-task');
@@ -753,6 +844,8 @@ window.openUpdateModal = async function (id) {
             btnComplete.style.display = hasAfter ? 'inline-block' : 'none';
             const completionContainer = document.getElementById('completion-time-container');
             if (completionContainer) completionContainer.style.display = hasAfter ? 'block' : 'none';
+            const notesContainer = document.getElementById('contractor-notes-container');
+            if (notesContainer) notesContainer.style.display = hasAfter ? 'block' : 'none';
         }
 
         if (btnClockIn) {
@@ -804,7 +897,6 @@ window.deleteImage = function (stage, index, containerId) {
         currentTaskImages[stage].splice(index, 1);
         renderPreview(containerId, currentTaskImages[stage], stage);
 
-        // Check for complete button visibility
         // Check for complete button visibility and manual time container
         if (stage === 'after') {
             const hasAfter = currentTaskImages.after.length > 0;
@@ -813,14 +905,21 @@ window.deleteImage = function (stage, index, containerId) {
 
             const completionContainer = document.getElementById('completion-time-container');
             if (completionContainer) completionContainer.style.display = hasAfter ? 'block' : 'none';
+
+            const notesContainer = document.getElementById('contractor-notes-container');
+            if (notesContainer) notesContainer.style.display = hasAfter ? 'block' : 'none';
         }
     }
 };
 
 window.closeUpdateModal = function () {
     document.getElementById('update-task-modal').style.display = 'none';
-    // Reset complete button
+    // Reset complete button and containers
     document.getElementById('btn-complete-task').style.display = 'none';
+    const completionContainer = document.getElementById('completion-time-container');
+    if (completionContainer) completionContainer.style.display = 'none';
+    const notesContainer = document.getElementById('contractor-notes-container');
+    if (notesContainer) notesContainer.style.display = 'none';
 }
 
 // Handle Form Submission (Update vs Complete)
@@ -892,13 +991,17 @@ window.submitProgress = async function (action) {
             progress.during.notes = notesDuring;
             progress.after.notes = notesAfter;
 
+            // Get Overall Contractor Notes
+            const overallNotes = document.getElementById('contractor-notes') ? document.getElementById('contractor-notes').value.trim() : "";
+
             // Use local state for images (which allowed additions/deletions)
             progress.before.images = currentTaskImages.before;
             progress.during.images = currentTaskImages.during;
             progress.after.images = currentTaskImages.after;
 
             complaint.progress = progress;
-            complaint.contractorNotes = notesDuring || notesAfter || notesBefore; // Legacy fallback
+            // Map the overall notes directly to the column mapping expecting 'catatan kontraktor'
+            complaint['catatan kontraktor'] = overallNotes || complaint.contractorNotes || notesDuring || notesAfter || notesBefore; // Legacy fallback
 
             // STATUS LOGIC
             let statusChanged = false;
@@ -1186,29 +1289,38 @@ function displayHistory(tasks) {
         tr.style.borderBottom = '1px solid #eee';
 
         const completionDate = task.progress?.after?.timestamp ? new Date(task.progress.after.timestamp).toLocaleDateString('ms-MY') : '-';
-        const duration = task.duration || '-';
+        const duration = task['tempoh siap'] || task.duration || '-';
 
-        // Generate Display ID (Initials-Seq/Year)
-        const contractorStr = task.contractor || 'SYK';
+        // Get exact complaint ID
+        const complaintId = task['no. aduan'] || task.id || '';
+
+        // Generate Display ID (Initials-Seq/Year) or just use Ref No
+        const contractorRef = task['no. rujukan kontraktor'] || task.contractorRefNo || '';
+        const contractorStr = task['kontraktor dilantik'] || task.contractor || 'SYK';
         const initials = (contractorStr.match(/\b\w/g) || ['S', 'Y', 'K']).slice(0, 3).join('').toUpperCase();
         const year = task.timestamp ? new Date(task.timestamp).getFullYear() : new Date().getFullYear();
-        const shortId = (task.id || '0000').toString().slice(-4);
-        const displayId = `${initials}-${shortId}/${year}`;
+        const shortId = (complaintId || '0000').toString().slice(-4);
+
+        const displayId = contractorRef ? contractorRef : `${initials}-${shortId}/${year}`;
+
+        const taskName = task['nama'] || task.name || '-';
+        const taskLocation = task['lokasi kerosakan'] || task.location || '-';
+        const taskDateCompleted = task['tarikh siap'] || task.dateCompleted || task.progress?.after?.timestamp;
 
         tr.innerHTML = `
             <td style="padding: 15px; font-weight: 600; color: #34495e;">${displayId}</td>
             <td style="padding: 15px;">
-                <div style="font-weight: 500; color: #2c3e50;">${task.name}</div>
-                <div style="font-size: 0.85em; color: #7f8c8d;"><i class="fas fa-map-marker-alt"></i> ${task.location}</div>
+                <div style="font-weight: 500; color: #2c3e50;">${taskName}</div>
+                <div style="font-size: 0.85em; color: #7f8c8d;"><i class="fas fa-map-marker-alt"></i> ${taskLocation}</div>
             </td>
-            <td style="padding: 15px; color: #2c3e50;">${formatDisplayDate(task.dateCompleted || task.progress?.after?.timestamp)}</td>
+            <td style="padding: 15px; color: #2c3e50;">${formatDisplayDate(taskDateCompleted)}</td>
             <td style="padding: 15px; color: #2c3e50;">${duration}</td>
             <td style="padding: 15px;">
                 <span style="padding: 4px 10px; background: #e8f5e9; color: #2e7d32; border-radius: 20px; font-size: 0.8em; font-weight: 600;">SIAP</span>
                 ${task.isVerified ? '<br><span style="font-size: 0.7em; color: #3498db; font-weight: 600;"><i class="fas fa-check-double"></i> DISAHKAN</span>' : ''}
             </td>
             <td style="padding: 15px; text-align: center;">
-                <button onclick="viewHistoryDetail('${task.id}')" style="background: none; border: none; color: #3498db; cursor: pointer; font-weight: 600; font-size: 0.9em;">
+                <button onclick="viewHistoryDetail('${complaintId}')" style="background: none; border: none; color: #3498db; cursor: pointer; font-weight: 600; font-size: 0.9em;">
                     <i class="fas fa-eye"></i> Lihat
                 </button>
             </td>
@@ -1314,15 +1426,20 @@ window.printHistory = function () {
     });
 
     visibleTasks.forEach((t, i) => {
-        const date = t.progress?.after?.timestamp ? new Date(t.progress.after.timestamp).toLocaleDateString('ms-MY') : '-';
+        const date = t['tarikh siap'] || t.dateCompleted || t.progress?.after?.timestamp ? new Date(t['tarikh siap'] || t.dateCompleted || t.progress.after.timestamp).toLocaleDateString('ms-MY') : '-';
+        const displayId = t['no. rujukan kontraktor'] || t.contractorRefNo || t['no. aduan'] || t.id || '-';
+        const name = t['nama'] || t.name || '-';
+        const loc = t['lokasi kerosakan'] || t.location || '-';
+        const duration = t['tempoh siap'] || t.duration || '-';
+
         tableRows += `
             <tr>
                 <td>${i + 1}</td>
-                <td>${t.id}</td>
-                <td>${t.name}</td>
-                <td>${t.location}</td>
+                <td>${displayId}</td>
+                <td>${name}</td>
+                <td>${loc}</td>
                 <td>${date}</td>
-                <td>${t.duration || '-'}</td>
+                <td>${duration}</td>
                 <td>${t.isVerified ? 'DISAHKAN' : 'SIAP'}</td>
             </tr>
         `;

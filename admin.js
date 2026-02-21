@@ -411,7 +411,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 </td>
                 <td data-label="Kontraktor" style="padding: 12px 10px;">${c['kontraktor dilantik'] || c.contractor || '-'}</td>
                 <td data-label="No. Rujukan" style="padding: 12px 10px;">
-                    ${(c.contractorRefNo || c.contractorRefN) ? `<span style="background:#fffde7; border:1px solid #f39c12; color:#b7791f; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; letter-spacing:0.5px;">${c.contractorRefNo || c.contractorRefN}</span>` : '<span style="color:#ccc;">-</span>'}
+                    ${(c['no. rujukan kontraktor'] || c.contractorRefNo || c.contractorRefN) ? `<span style="background:#fffde7; border:1px solid #f39c12; color:#b7791f; padding:3px 10px; border-radius:20px; font-weight:700; font-size:11px; letter-spacing:0.5px;">${c['no. rujukan kontraktor'] || c.contractorRefNo || c.contractorRefN}</span>` : '<span style="color:#ccc;">-</span>'}
                 </td>
                 <td data-label="Tarikh Lantikan" style="padding: 12px 10px; font-size: 11px; color: #666;">
                     ${formatDisplayDate(c['tarikh lantikan'] || c.assignedDate)}
@@ -585,16 +585,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 // ✅ AUTO-GENERATE NO. RUJUKAN (CMD-XXXX/YEAR)
                 const refInput = document.getElementById('modal-contractor-ref');
                 if (refInput) {
-                    if (complaints[index].contractorRefNo) {
-                        // Jika sudah ada, kekalkan yang lama
-                        refInput.value = complaints[index].contractorRefNo;
+                    if (complaints[index]['no. rujukan kontraktor'] || complaints[index].contractorRefNo) {
+                        // Jika sudah ada, kekalkan yang lama (sokong kunci lama sebagai fallback)
+                        refInput.value = complaints[index]['no. rujukan kontraktor'] || complaints[index].contractorRefNo;
                     } else {
                         // Jana baru berurutan bagi tahun semasa
                         const year = new Date().getFullYear();
                         const allComplaints = window.allComplaints || [];
-                        const existingRefs = allComplaints.filter(c =>
-                            c.contractorRefNo && c.contractorRefNo.includes(`/${year}`)
-                        ).length;
+                        const existingRefs = allComplaints.filter(c => {
+                            const ref = c['no. rujukan kontraktor'] || c.contractorRefNo || '';
+                            return ref.includes(`/${year}`);
+                        }).length;
                         const nextNum = (existingRefs + 1).toString().padStart(4, '0');
                         refInput.value = `CMD-${nextNum}/${year}`;
                     }
@@ -669,7 +670,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 complaints[index]['kontraktor dilantik'] = contractor;
                 complaints[index]['keterangan tugasan'] = taskDesc;
-                complaints[index].contractorRefNo = contractorRefNo;
+                complaints[index]['no. rujukan kontraktor'] = contractorRefNo; // MAP CORRECTLY TO SPREADSHEET HEADER
                 complaints[index].status = 'Tindakan Kontraktor';
 
                 // Record Assignment Date & Time
