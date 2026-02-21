@@ -202,12 +202,35 @@
 
         if (complaintId) {
             document.getElementById('display-id').textContent = complaintId;
+            // CHECK IF ALREADY RATED
+            checkExistingRating(complaintId);
         } else {
             document.getElementById('form-container').innerHTML = `
-        <i class="fas fa-exclamation-triangle" style="font-size:50px; color:#e74c3c; margin-bottom:20px;"></i>
-        <h2>Pautan Tidak Sah</h2>
-        <p>Ralat: ID Aduan tidak dijumpai. Sila gunakan pautan dari emel notifikasi anda.</p>
-    `;
+                <i class="fas fa-exclamation-triangle" style="font-size:50px; color:#e74c3c; margin-bottom:20px;"></i>
+                <h2>Pautan Tidak Sah</h2>
+                <p>Ralat: ID Aduan tidak dijumpai. Sila gunakan pautan dari emel notifikasi anda.</p>
+            `;
+        }
+
+        async function checkExistingRating(id) {
+            const api_url = 'https://script.google.com/macros/s/AKfycbzlmcR6XK3QGWXaCzlV8O7OoBSE_2-2pWBVImmW_AT6tioxA-Pd9a29EYFUl3MQQA39/exec';
+            const token = "https://github.com/Jkr-web/E-aduan-JKR";
+
+            try {
+                const response = await fetch(`${api_url}?token=${token}&action=get_all`);
+                const data = await response.json();
+                const complaints = data.complaints || [];
+                const complaint = complaints.find(c => (c.id == id || c['no. aduan'] == id));
+
+                if (complaint && (complaint.rating || complaint.Rating || complaint.penilaian)) {
+                    // Already rated
+                    document.getElementById('form-container').style.display = 'none';
+                    document.getElementById('thankyou').style.display = 'block';
+                    document.querySelector('#thankyou p').innerHTML = `Anda telah pun memberikan penilaian bagi aduan <strong>${id}</strong> sebelum ini. Terima kasih!`;
+                }
+            } catch (err) {
+                console.warn("Could not verify existing rating:", err);
+            }
         }
 
         stars.forEach(star => {
