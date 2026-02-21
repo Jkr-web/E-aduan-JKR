@@ -4,18 +4,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Aduan - Log Masuk</title>
-    <!-- FontAwesome for icons -->
+    <title>JKR Aduan - Log Masuk</title>
+
+    <!-- Google Fonts: Inter & Outfit -->
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;800&display=swap"
+        rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
     <style>
         :root {
-            --bg-overlay: rgba(244, 247, 246, 0.85);
+            --primary: #2563eb;
+            --primary-dark: #1e40af;
+            --secondary: #64748b;
+            --accent: #f1c40f;
+            --success: #10b981;
+            --error: #ef4444;
+            --bg-overlay: rgba(15, 23, 42, 0.85);
+            /* Darker, more professional overlay */
             --bg-image: none;
+            --glass-bg: rgba(255, 255, 255, 0.95);
+            --glass-border: rgba(255, 255, 255, 0.2);
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f4f7f6;
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
             background-image: linear-gradient(var(--bg-overlay), var(--bg-overlay)), var(--bg-image);
             background-size: cover;
             background-position: center;
@@ -25,15 +39,310 @@
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .login-wrapper {
+            width: 100%;
+            max-width: 420px;
+            padding: 20px;
+            box-sizing: border-box;
+            perspective: 1000px;
+        }
+
+        .login-container {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--glass-border);
+            text-align: center;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: containerEntry 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes containerEntry {
+            from {
+                opacity: 0;
+                transform: translateY(40px) scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .logo-wrapper {
+            width: 90px;
+            height: 90px;
+            margin: -85px auto 25px auto;
+            background: white;
+            border-radius: 22px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15);
+            padding: 12px;
+            border: 4px solid var(--glass-bg);
+            transition: transform 0.3s ease;
+        }
+
+        .logo {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        h2 {
+            font-family: 'Outfit', sans-serif;
+            margin: 0 0 8px 0;
+            color: #1e293b;
+            font-size: 1.75rem;
+            font-weight: 800;
+            letter-spacing: -0.025em;
+        }
+
+        .system-subtitle {
+            font-size: 0.875rem;
+            color: #64748b;
+            margin-bottom: 30px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .system-subtitle::before,
+        .system-subtitle::after {
+            content: '';
+            height: 1px;
+            width: 20px;
+            background: #e2e8f0;
+        }
+
+        /* Tabs Redesign */
+        .tabs {
+            display: flex;
+            background: #f1f5f9;
+            padding: 6px;
+            border-radius: 14px;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 10px 15px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 0.875rem;
+            color: var(--secondary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            z-index: 1;
+            border-radius: 10px;
+        }
+
+        .tab.active {
+            color: #fff;
+            background: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+        }
+
+        /* Form Styling */
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #475569;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #1e293b;
+            box-sizing: border-box;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: #fff;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+
+        .password-wrapper {
+            position: relative;
+        }
+
+        .password-wrapper input {
+            padding-right: 44px;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #94a3b8;
+            padding: 5px;
+            z-index: 10;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.3s;
+            margin-top: 10px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-admin {
+            background: var(--primary);
+            color: white;
+        }
+
+        .btn-admin:hover {
+            transform: translateY(-2px);
+            background: var(--primary-dark);
+            box-shadow: 0 10px 15px -3px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-contractor {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-contractor:hover {
+            transform: translateY(-2px);
+            background: #059669;
+            box-shadow: 0 10px 15px -3px rgba(16, 185, 129, 0.3);
+        }
+
+        .footer-links {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .link-item {
+            color: #64748b;
+            text-decoration: none;
+            font-size: 0.875rem;
+            font-weight: 600;
+            display: block;
+            margin: 10px 0;
+            transition: color 0.2s;
+        }
+
+        .link-item:hover {
+            color: var(--primary);
+        }
+
+        /* Error States */
+        .error-msg {
+            color: var(--error);
+            font-size: 0.75rem;
+            margin-top: 6px;
+            display: none;
+            font-weight: 700;
+            background: #fef2f2;
+            padding: 6px 10px;
+            border-radius: 6px;
+            border-left: 3px solid var(--error);
+        }
+
+        .attempts-counter {
+            background: #fffbeb;
+            color: #92400e;
+            padding: 10px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+            display: none;
+            border: 1px solid #fef3c7;
+            font-weight: 700;
+        }
+
+        .reset-link-warning {
+            display: none;
+            color: var(--error);
+            font-size: 0.85rem;
+            margin-top: 15px;
+            font-weight: 800;
+            line-height: 1.4;
+        }
+
+        input.error {
+            border-color: var(--error) !important;
+            background-color: #fef2f2;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            20%,
+            60% {
+                transform: translateX(-5px);
+            }
+
+            40%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        .hidden {
+            display: none;
         }
     </style>
 
-    <!-- Fast Branding Script -->
+    <!-- Branding Script -->
     <script>
         (function () {
             const savedLogo = localStorage.getItem('appLogo');
             const savedBg = localStorage.getItem('appBackground');
             const savedName = localStorage.getItem('systemName');
+            const savedSubtitle = localStorage.getItem('systemSubtitle');
+            const savedCopyright = localStorage.getItem('footerCopyright');
 
             if (savedBg) {
                 document.documentElement.style.setProperty('--bg-image', `url('${savedBg}')`);
@@ -54,362 +363,113 @@
                     const h2 = document.querySelector('.login-container h2');
                     if (h2) h2.textContent = savedName;
                 }
+                if (savedSubtitle) {
+                    const sub = document.querySelector('.system-subtitle');
+                    if (sub) sub.textContent = savedSubtitle;
+                }
+                if (savedCopyright) {
+                    const copy = document.getElementById('footer-copyright-text');
+                    if (copy) copy.innerHTML = savedCopyright;
+                }
             });
         })();
     </script>
-
-    <style>
-        .login-container {
-            background-color: #fff;
-            padding: 40px;
-            border-radius: 8px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-            max-width: 400px;
-            width: 100%;
-            text-align: center;
-            box-sizing: border-box;
-        }
-
-        .logo-wrapper {
-            width: 100px;
-            height: 100px;
-            margin: 0 auto 25px auto;
-            background: white;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
-            overflow: hidden;
-            padding: 5px;
-        }
-
-        .logo {
-            max-width: 100%;
-            max-height: 100%;
-            object-fit: contain;
-        }
-
-        h2 {
-            margin-bottom: 5px;
-            color: #2c3e50;
-            font-size: 1.6rem;
-            font-weight: 800;
-            letter-spacing: -0.5px;
-            text-transform: uppercase;
-        }
-
-        .system-subtitle {
-            font-size: 0.95rem;
-            color: #7f8c8d;
-            margin-bottom: 25px;
-            font-weight: 500;
-        }
-
-        .tabs {
-            display: flex;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .tab {
-            flex: 1;
-            padding: 10px;
-            cursor: pointer;
-            font-weight: 600;
-            color: #777;
-            transition: all 0.3s;
-        }
-
-        .tab.active {
-            color: #0056b3;
-            border-bottom: 2px solid #0056b3;
-            background-color: #f9f9f9;
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-            text-align: left;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 5px;
-            font-weight: 500;
-            color: #666;
-        }
-
-        input {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 16px;
-            box-sizing: border-box;
-        }
-
-        button.login-btn {
-            width: 100%;
-            padding: 12px;
-            background-color: #0056b3;
-            color: white;
-            border: none;
-            border-radius: 4px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s;
-            margin-top: 10px;
-        }
-
-        button.login-btn:hover {
-            background-color: #004494;
-        }
-
-        /* Password Show/Hide Styling */
-        .password-wrapper {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .password-wrapper input {
-            padding-right: 40px;
-        }
-
-        .toggle-password {
-            position: absolute;
-            right: 12px;
-            cursor: pointer;
-            color: #7f8c8d;
-            transition: color 0.2s;
-            z-index: 10;
-        }
-
-        .toggle-password:hover {
-            color: #2c3e50;
-        }
-
-        .footer-links {
-            margin-top: 20px;
-            font-size: 14px;
-        }
-
-        .footer-links a {
-            color: #0056b3;
-            text-decoration: none;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            backdrop-filter: blur(4px);
-            z-index: 1000;
-            justify-content: center;
-            align-items: center;
-        }
-
-        .modal-card {
-            background: white;
-            padding: 30px;
-            border-radius: 12px;
-            max-width: 400px;
-            width: 90%;
-            text-align: center;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-            animation: modalPop 0.3s ease-out;
-        }
-
-        @keyframes modalPop {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
-        }
-
-        .modal-card i {
-            font-size: 3rem;
-            color: #f39c12;
-            margin-bottom: 15px;
-        }
-
-        .modal-card h3 {
-            margin: 0 0 10px 0;
-            color: #2c3e50;
-        }
-
-        .modal-card p {
-            color: #7f8c8d;
-            line-height: 1.5;
-            margin-bottom: 20px;
-        }
-
-        .modal-btn {
-            background: #0056b3;
-            color: white;
-            border: none;
-            padding: 10px 25px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-        }
-
-        /* Error States & Animations */
-        @keyframes shake {
-
-            0%,
-            100% {
-                transform: translateX(0);
-            }
-
-            10%,
-            30%,
-            50%,
-            70%,
-            90% {
-                transform: translateX(-5px);
-            }
-
-            20%,
-            40%,
-            60%,
-            80% {
-                transform: translateX(5px);
-            }
-        }
-
-        .shake {
-            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
-            border-color: #e74c3c !important;
-        }
-
-        .error-msg {
-            color: #e74c3c;
-            font-size: 0.85rem;
-            margin-top: 5px;
-            display: none;
-            font-weight: 600;
-        }
-
-        .attempts-counter {
-            background: #fff5f5;
-            color: #c53030;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 0.85rem;
-            margin-bottom: 15px;
-            display: none;
-            border: 1px solid #feb2b2;
-            font-weight: bold;
-        }
-
-        .reset-link-warning {
-            display: none;
-            color: #c53030;
-            font-size: 0.9rem;
-            margin-top: 15px;
-            font-weight: bold;
-            line-height: 1.4;
-        }
-
-        input.error {
-            border-color: #e74c3c !important;
-            background-color: #fffcfc;
-        }
-    </style>
 </head>
 
 <body>
 
-    <div class="login-container">
-        <!-- Logo Wrapper -->
-        <div class="logo-wrapper">
-            <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="50" cy="50" r="45" fill="#0056b3" />
-                <text x="50" y="55" font-size="20" text-anchor="middle" fill="white" font-family="Arial, sans-serif"
-                    font-weight="bold">JKR</text>
-            </svg>
-        </div>
-
-        <h2>Sistem Aduan Kerosakan</h2>
-        <p class="system-subtitle">Jabatan Kerja Raya (JKR)</p>
-
-        <!-- Tabs -->
-        <div class="tabs">
-            <div id="tab-admin" class="tab active" onclick="switchLogin('admin')">Admin</div>
-            <div id="tab-contractor" class="tab" onclick="switchLogin('contractor')">Syarikat/Kontraktor</div>
-        </div>
-
-        <!-- Admin Login Form -->
-        <div id="admin-attempts" class="attempts-counter"></div>
-        <form id="admin-login-form" onsubmit="handleLogin(event, 'admin')">
-            <div class="form-group">
-                <label for="admin-email">Emel / ID Pengguna</label>
-                <input type="text" id="admin-email" placeholder="Masukkan Emel Rasmi (admin@jkr.gov.my)" required>
-                <div id="admin-email-error" class="error-msg">Emel atau ID pengguna tidak dijumpai.</div>
+    <div class="login-wrapper">
+        <div class="login-container">
+            <!-- Logo Wrapper -->
+            <div class="logo-wrapper">
+                <svg class="logo" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="50" cy="50" r="45" fill="#2563eb" />
+                    <text x="50" y="55" font-size="20" text-anchor="middle" fill="white" font-family="Arial, sans-serif"
+                        font-weight="bold">JKR</text>
+                </svg>
             </div>
-            <div class="form-group">
-                <label for="admin-password">Kata Laluan</label>
-                <div class="password-wrapper">
-                    <input type="password" id="admin-password" placeholder="••••••••" required>
-                    <i class="fas fa-eye toggle-password"
-                        onclick="togglePasswordVisibility('admin-password', this)"></i>
+
+            <h2>Sistem Aduan Kerosakan</h2>
+            <p class="system-subtitle">Cawangan Selenggara Bangunan</p>
+
+            <!-- Tabs -->
+            <div class="tabs">
+                <div id="tab-admin" class="tab active" onclick="switchLogin('admin')">ADMIN</div>
+                <div id="tab-contractor" class="tab" onclick="switchLogin('contractor')">KONTRAKTOR</div>
+            </div>
+
+            <!-- Admin Login Form -->
+            <div id="admin-attempts" class="attempts-counter"></div>
+            <form id="admin-login-form" onsubmit="handleLogin(event, 'admin')">
+                <div class="form-group">
+                    <label>Emel / ID Pengguna</label>
+                    <input type="text" id="admin-email" placeholder="admin@jkr.gov.my" required>
+                    <div id="admin-email-error" class="error-msg">Emel atau ID pengguna tidak dijumpai.</div>
                 </div>
-                <div id="admin-password-error" class="error-msg">Kata laluan salah.</div>
-            </div>
-            <button type="submit" class="login-btn">Log Masuk Admin</button>
-            <div id="admin-reset-warning" class="reset-link-warning">
-                Terlalu banyak percubaan gagal. <br>
-                <a href="lupa-katalaluan.html" style="text-decoration: underline;">Sila Reset Kata Laluan</a>
-            </div>
-        </form>
-
-        <!-- Contractor Login Form -->
-        <div id="contractor-attempts" class="attempts-counter"></div>
-        <form id="contractor-login-form" class="hidden" onsubmit="handleLogin(event, 'contractor')">
-            <div class="form-group">
-                <label for="contractor-id">Emel / ID Syarikat</label>
-                <input type="text" id="contractor-id" placeholder="Masukkan Emel / Username Syarikat" required>
-                <div id="contractor-email-error" class="error-msg">Emel atau ID syarikat tidak dijumpai.</div>
-            </div>
-            <div class="form-group">
-                <label for="contractor-password">Kata Laluan</label>
-                <div class="password-wrapper">
-                    <input type="password" id="contractor-password" placeholder="••••••••" required>
-                    <i class="fas fa-eye toggle-password"
-                        onclick="togglePasswordVisibility('contractor-password', this)"></i>
+                <div class="form-group">
+                    <label>Kata Laluan</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="admin-password" placeholder="••••••••" required>
+                        <i class="fas fa-eye toggle-password"
+                            onclick="togglePasswordVisibility('admin-password', this)"></i>
+                    </div>
+                    <div id="admin-password-error" class="error-msg">Kata laluan salah.</div>
                 </div>
-                <div id="contractor-password-error" class="error-msg">Kata laluan salah.</div>
-            </div>
-            <button type="submit" class="login-btn" style="background-color: #28a745;">Log Masuk Syarikat</button>
-            <div id="contractor-reset-warning" class="reset-link-warning">
-                Terlalu banyak percubaan gagal. <br>
-                <a href="lupa-katalaluan.html" style="text-decoration: underline;">Sila Reset Kata Laluan</a>
-            </div>
-        </form>
+                <button type="submit" class="login-btn btn-admin">
+                    <i class="fas fa-shield-alt"></i> LOG MASUK ADMIN
+                </button>
+                <div id="admin-reset-warning" class="reset-link-warning">
+                    Terlalu banyak percubaan gagal. <br>
+                    <a href="lupa-katalaluan.html" style="color: var(--primary); text-decoration: underline;">Sila Reset
+                        Kata Laluan</a>
+                </div>
+            </form>
 
-        <div class="footer-links">
-            <p><a href="formuser.html" style="color: #666; font-size: 0.9em;">Pergi ke Borang Aduan Awam</a></p>
-            <p><a href="lupa-katalaluan.html">Lupa Kata Laluan?</a></p>
+            <!-- Contractor Login Form -->
+            <div id="contractor-attempts" class="attempts-counter"></div>
+            <form id="contractor-login-form" class="hidden" onsubmit="handleLogin(event, 'contractor')">
+                <div class="form-group">
+                    <label>Emel / ID Syarikat</label>
+                    <input type="text" id="contractor-id" placeholder="ID Syarikat atau Emel" required>
+                    <div id="contractor-email-error" class="error-msg">Emel atau ID syarikat tidak dijumpai.</div>
+                </div>
+                <div class="form-group">
+                    <label>Kata Laluan</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="contractor-password" placeholder="••••••••" required>
+                        <i class="fas fa-eye toggle-password"
+                            onclick="togglePasswordVisibility('contractor-password', this)"></i>
+                    </div>
+                    <div id="contractor-password-error" class="error-msg">Kata laluan salah.</div>
+                </div>
+                <button type="submit" class="login-btn btn-contractor">
+                    <i class="fas fa-hard-hat"></i> LOG MASUK SYARIKAT
+                </button>
+                <div id="contractor-reset-warning" class="reset-link-warning">
+                    Terlalu banyak percubaan gagal. <br>
+                    <a href="lupa-katalaluan.html" style="color: var(--primary); text-decoration: underline;">Sila Reset
+                        Kata Laluan</a>
+                </div>
+            </form>
+
+            <div class="footer-links">
+                <a href="formuser.html" class="link-item"><i class="fas fa-file-alt"></i> Borang Aduan Awam</a>
+                <a href="lupa-katalaluan.html" class="link-item"><i class="fas fa-key"></i> Lupa Kata Laluan?</a>
+            </div>
         </div>
+
+        <!-- Footer Copyright -->
+        <footer class="login-footer"
+            style="margin-top: 30px; text-align: center; color: rgba(255,255,255,0.7); font-size: 0.8rem; font-weight: 500; text-shadow: 0 1px 2px rgba(0,0,0,0.1);">
+            <p id="footer-copyright-text">&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara.</p>
+        </footer>
     </div>
 
     <script src="client-api.js"></script>
-    <script>
+    <script type="module">
+        import { auth } from './firebase-config.js';
+        import { signInWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
         // Check if already logged in
         (function () {
             const userRole = localStorage.getItem('userRole');
@@ -420,7 +480,8 @@
             }
         })();
 
-        function togglePasswordVisibility(inputId, icon) {
+        // Assign to window for HTML event handlers
+        window.togglePasswordVisibility = function (inputId, icon) {
             const input = document.getElementById(inputId);
             if (input.type === 'password') {
                 input.type = 'text';
@@ -431,9 +492,11 @@
                 icon.classList.remove('fa-eye-slash');
                 icon.classList.add('fa-eye');
             }
-        }
+            // Ensure button remains clickable and focus is handled correctly
+            return false;
+        };
 
-        function switchLogin(type) {
+        window.switchLogin = function (type) {
             const adminForm = document.getElementById('admin-login-form');
             const contractorForm = document.getElementById('contractor-login-form');
             const adminTab = document.getElementById('tab-admin');
@@ -450,23 +513,20 @@
                 adminTab.classList.remove('active');
                 contractorTab.classList.add('active');
             }
-        }
-
-        let loginAttempts = {
-            admin: 3,
-            contractor: 3
         };
 
-        function handleLogin(event, type) {
+        window.handleLogin = async function (event, type) {
             event.preventDefault();
 
             const form = event.target;
             const btn = form.querySelector('button');
-            const originalText = btn.textContent;
-            const emailInputEl = form.querySelector('input[type="text"], input[type="email"]');
-            const passwordInputEl = form.querySelector('input[type="password"]');
+            const originalText = btn.innerHTML;
 
-            const emailValue = emailInputEl.value.trim();
+            // Fixed: Use ID instead of type because eye icon changes type to "text"
+            const emailInputEl = document.getElementById(type === 'admin' ? 'admin-email' : 'contractor-id');
+            const passwordInputEl = document.getElementById(type === 'admin' ? 'admin-password' : 'contractor-password');
+
+            const inputValue = emailInputEl.value.trim();
             const passwordValue = passwordInputEl.value.trim();
 
             const emailError = document.getElementById(`${type}-email-error`);
@@ -474,86 +534,87 @@
             const attemptsEl = document.getElementById(`${type}-attempts`);
             const resetWarning = document.getElementById(`${type}-reset-warning`);
 
+            const loginAttempts = window.loginAttempts || { admin: 3, contractor: 3 };
+            window.loginAttempts = loginAttempts;
+
             // Reset UI
             emailError.style.display = 'none';
             passwordError.style.display = 'none';
             emailInputEl.classList.remove('shake', 'error');
             passwordInputEl.classList.remove('shake', 'error');
 
-            if (!emailValue || !passwordValue) {
-                alert("Sila isi semua maklumat.");
-                return;
-            }
+            if (!inputValue || !passwordValue) return;
 
-            btn.textContent = "Memproses...";
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> MEMPROSES...';
             btn.disabled = true;
 
-            setTimeout(async () => {
-                try {
-                    let data = await API.getAll(false);
-                    const users = type === 'admin' ? (data.admins || []) : (data.contractors || []);
+            try {
+                // 1. Fetch Metadata from Google Sheets to resolve Username to Email
+                let data = await API.getAll(false);
+                const users = type === 'admin' ? (data.admins || []) : (data.contractors || []);
 
-                    // 1. Prepare identities for matching
-                    const inputLower = emailValue.toLowerCase();
-                    const isMasterAdminEmail = (type === 'admin' && inputLower === 'admin@jkr.gov.my');
+                const inputLower = inputValue.toLowerCase();
+                let targetEmail = inputLower; // Default to input if it's already an email
+                let userMetadata = null;
 
-                    // 2. Find User in Database (Email OR Username/ID)
-                    const userByEmail = users.find(u => {
-                        const storedEmail = (u.email || '').toLowerCase().trim();
-                        const storedUsername = (u.username || '').toLowerCase().trim();
-                        return storedEmail === inputLower || storedUsername === inputLower;
-                    });
+                // Resolve by email or username
+                userMetadata = users.find(u => {
+                    const storedEmail = (u.email || '').toLowerCase().trim();
+                    const storedUsername = (u.username || '').toLowerCase().trim();
+                    const storedRegNo = (u.regNo || u['no. daftar'] || '').toLowerCase().trim();
+                    return storedEmail === inputLower || storedUsername === inputLower || storedRegNo === inputLower;
+                });
 
-                    // 3. Logic: If email exists in DB OR is the master admin email
-                    if (isMasterAdminEmail || userByEmail) {
-
-                        let authenticatedUser = null;
-
-                        // Verify Password for Master Admin
-                        if (isMasterAdminEmail && passwordValue === 'admin123') {
-                            authenticatedUser = { name: 'Super Admin', email: 'admin@jkr.gov.my' };
-                        }
-                        // Verify Password for DB User
-                        else if (userByEmail && userByEmail.password === passwordValue) {
-                            authenticatedUser = userByEmail;
-                        }
-
-                        if (authenticatedUser) {
-                            successLogin(type, authenticatedUser);
-                        } else {
-                            // EMAIL BETUL, TAPI PASSWORD SALAH
-                            loginAttempts[type]--;
-                            passwordError.style.display = 'block';
-                            passwordInputEl.classList.add('shake', 'error');
-
-                            if (loginAttempts[type] <= 0) {
-                                attemptsEl.style.display = 'none';
-                                resetWarning.style.display = 'block';
-                                passwordInputEl.disabled = true;
-                                emailInputEl.disabled = true;
-                                btn.style.display = 'none';
-                            } else {
-                                attemptsEl.textContent = `Percubaan baki: ${loginAttempts[type]} kali`;
-                                attemptsEl.style.display = 'block';
-                                btn.textContent = originalText;
-                                btn.disabled = false;
-                            }
-                        }
-                    } else {
-                        // EMAIL/ID MEMANG TIADA
-                        emailError.style.display = 'block';
-                        emailInputEl.classList.add('shake', 'error');
-                        btn.textContent = originalText;
-                        btn.disabled = false;
-                    }
-                } catch (err) {
-                    console.error("Login Error:", err);
-                    alert("Ralat sambungan ke server. Sila cuba lagi.");
-                    btn.textContent = originalText;
-                    btn.disabled = false;
+                // Master Admin UI Fallback
+                if (!userMetadata && inputLower === 'admin@jkr.gov.my') {
+                    targetEmail = 'admin@jkr.gov.my';
+                } else if (userMetadata) {
+                    targetEmail = userMetadata.email;
+                } else {
+                    // Stop early if user not found in Sheets (Metadata)
+                    throw { code: 'auth/user-not-found' };
                 }
-            }, 600);
-        }
+
+                // 2. Authenticate via Firebase using the resolved Email
+                const userCredential = await signInWithEmailAndPassword(auth, targetEmail, passwordValue);
+                const fbUser = userCredential.user;
+
+                // 3. Auth success
+                if (userMetadata || targetEmail === 'admin@jkr.gov.my') {
+                    const finalUser = userMetadata || { name: 'Super Admin', email: 'admin@jkr.gov.my' };
+                    successLogin(type, finalUser);
+                } else {
+                    throw new Error("Akaun sah tetapi peranan tidak dijumpai.");
+                }
+
+            } catch (err) {
+                console.error("Login Error:", err);
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+
+                if (err.code === 'auth/user-not-found' || err.code === 'auth/invalid-email') {
+                    emailError.style.display = 'block';
+                    emailInputEl.classList.add('shake', 'error');
+                } else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+                    loginAttempts[type]--;
+                    passwordError.style.display = 'block';
+                    passwordInputEl.classList.add('shake', 'error');
+
+                    if (loginAttempts[type] <= 0) {
+                        attemptsEl.style.display = 'none';
+                        resetWarning.style.display = 'block';
+                        passwordInputEl.disabled = true;
+                        emailInputEl.disabled = true;
+                        btn.style.display = 'none';
+                    } else {
+                        attemptsEl.innerHTML = `<i class="fas fa-exclamation-circle"></i> Sila cuba lagi. Baki percubaan: ${loginAttempts[type]}`;
+                        attemptsEl.style.display = 'block';
+                    }
+                } else {
+                    alert("Ralat: " + (err.message || "Sila semak kredensial atau sambungan internet anda."));
+                }
+            }
+        };
 
         function successLogin(type, found) {
             if (type === 'admin') {
@@ -565,14 +626,11 @@
                 localStorage.setItem('userRole', 'contractor');
                 localStorage.setItem('userName', found.name);
                 localStorage.setItem('contractorEmail', found.email || '');
-                localStorage.setItem('contractorRegNo', found.regNo || '');
+                localStorage.setItem('contractorRegNo', found.regNo || found['no. daftar'] || '');
                 window.location.href = 'kontraktor.html';
             }
         }
     </script>
-
-    <!-- Branding applied in head for speed -->
-
 </body>
 
 </html>

@@ -382,7 +382,11 @@
     <div id="toast" class="toast"></div>
 
     <script src="client-api.js"></script>
-    <script>
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
         // Apply branding from localStorage
         (function applyBranding() {
             const savedLogo = localStorage.getItem('appLogo');
@@ -405,7 +409,7 @@
 
         let targetUser = null;
 
-        function showToast(msg) {
+        window.showToast = function (msg) {
             const toast = document.getElementById('toast');
             toast.textContent = msg;
             toast.style.display = 'block';
@@ -416,9 +420,9 @@
             const container = document.querySelector('.lupa-container');
             container.classList.add('animate-shake');
             setTimeout(() => container.classList.remove('animate-shake'), 400);
-        }
+        };
 
-        async function performSearch() {
+        window.performSearch = async function () {
             const inputField = document.getElementById('search-input');
             const input = inputField.value.trim().toLowerCase();
             const btn = document.getElementById('btn-search');
@@ -435,15 +439,9 @@
             resultBox.classList.remove('active');
 
             try {
-                // 1. Try Cache First for "Fast Load" feel
-                let data = await API.getAll(true);
+                // Search in Google Sheets (Metadata)
+                let data = await API.getAll(false);
                 let found = findUser(data, input);
-
-                if (!found) {
-                    // 2. If not in cache, try Server
-                    data = await API.getAll(false);
-                    found = findUser(data, input);
-                }
 
                 if (found) {
                     targetUser = found;
@@ -465,7 +463,7 @@
                 btn.innerHTML = '<i class="fas fa-search"></i> Cari Maklumat';
                 btn.disabled = false;
             }
-        }
+        };
 
         function findUser(data, input) {
             if (!data) return null;
@@ -486,43 +484,48 @@
             return found;
         }
 
-        async function sendResetRequest() {
-            if (!targetUser) return;
+        window.sendResetRequest = async function () {
+            if (!targetUser || !targetUser.email) {
+                showToast("Emel pengguna tidak dijumpai untuk proses reset.");
+                return;
+            }
 
             const btn = document.getElementById('btn-request');
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghantar...';
 
             try {
-                // Here we append a record to a "PermohonanReset" sheet if it exists,
-                // or just simulate success if not defined.
-                // Assuming we want to track this:
-                const requestData = {
-                    "tarikh": new Date().toLocaleDateString('ms-MY'),
-                    "masa": new Date().toLocaleTimeString('ms-MY'),
-                    "nama": targetUser.name,
-                    "id_pengguna": targetUser.email || targetUser.username || targetUser.regNo,
-                    "status": "Baru",
-                    "timestamp": new Date().toISOString()
-                };
+                // 1. Send Password Reset Email via Firebase Auth
+                await sendPasswordResetEmail(auth, targetUser.email);
 
-                // We try update the Reset sheet if the API supports it
-                // For now, let's just show success to the user.
-                // In a real app, you'd call API.saveResetRequest(requestData)
-
-                // Simulate delay
-                await new Promise(r => setTimeout(r, 1500));
+                // 2. Log Request to Firestore for Admin Tracking
+                try {
+                    await addDoc(collection(db, "reset_requests"), {
+                        userName: targetUser.name,
+                        userEmail: targetUser.email,
+                        role: targetUser.role || 'unknown',
+                        status: "Sent",
+                        requestedAt: serverTimestamp(),
+                        source: "Web Application"
+                    });
+                } catch (firestoreErr) {
+                    console.warn("Firestore logging failed, but email was sent:", firestoreErr);
+                }
 
                 document.getElementById('search-view').style.display = 'none';
                 document.getElementById('success-view').classList.add('active');
+                document.getElementById('success-msg').textContent = `Emel pemulihan kata laluan telah dihantar ke ${targetUser.email}. Sila semak peti masuk (atau folder spam) anda.`;
 
             } catch (e) {
-                console.error(e);
-                showToast("Gagal menghantar permohonan. Sila hubungi IT secara manual.");
+                console.error("Reset Error:", e);
+                let errorMsg = "Gagal menghantar permohonan.";
+                if (e.code === 'auth/user-not-found') errorMsg = "Emel ini tidak berdaftar di sistem keselamatan (Firebase).";
+
+                showToast(errorMsg);
                 btn.disabled = false;
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i> Hantar Permohonan Reset';
             }
-        }
+        };
     </script>
 </body>
 

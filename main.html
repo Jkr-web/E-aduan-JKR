@@ -63,6 +63,7 @@
             <li><a href="#laporan-admin"><i class="fas fa-chart-bar"></i> Laporan Admin</a></li>
             <li><a href="#senarai-syarikat"><i class="fas fa-building"></i> Senarai Syarikat</a></li>
             <li><a href="#senarai-admin"><i class="fas fa-user-shield"></i> Senarai Admin</a></li>
+            <li><a href="#reset-requests"><i class="fas fa-key"></i> Log Reset Kata Laluan</a></li>
             <li><a href="#tetapan"><i class="fas fa-cog"></i> Tetapan</a></li>
             <li><a href="index.html" class="logout"><i class="fas fa-sign-out-alt"></i> Log Keluar</a></li>
         </ul>
@@ -395,10 +396,17 @@
                     <!-- List populated by JS -->
                 </ul>
             </section>
+            <!-- 6. Log Reset Requests (Firestore) -->
+            <section id="reset-requests" class="section">
+                <h1 class="page-title">Log Permohonan Reset Kata Laluan</h1>
+                <p style="color: #64748b; margin-bottom: 20px;">Senarai pengguna yang telah memohon pautan pemulihan
+                    kata laluan melalui Firebase.</p>
+                <div id="reset-requests-list">
+                    <!-- Data populated from Firestore -->
+                </div>
+            </section>
 
-
-
-            <!-- 6. Tetapan Section -->
+            <!-- 7. Tetapan Section -->
             <section id="tetapan" class="section">
                 <h1 class="page-title">Tetapan Sistem</h1>
 
@@ -418,6 +426,19 @@
                                     style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Nama
                                     Sistem</label>
                                 <input type="text" id="setting-system-name" value="Sistem Aduan Kerosakan JKR"
+                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 15px;">
+
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Sub-nama
+                                    Sistem (Unit/Jabatan)</label>
+                                <input type="text" id="setting-system-subtitle" value="Cawangan Selenggara Bangunan"
+                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 15px;">
+
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Footer
+                                    Copyright</label>
+                                <input type="text" id="setting-footer-copyright"
+                                    value="&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara."
                                     style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
                             </div>
                             <div>
@@ -565,6 +586,9 @@
                 </div>
             </section>
 
+            <footer id="main-footer" class="global-footer" style="margin-top: 50px;">
+                <span id="footer-text">&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara.</span>
+            </footer>
         </div> <!-- End of content-body -->
     </div> <!-- End of main-content -->
 
@@ -575,7 +599,7 @@
     <!-- Chart DataLabels Plugin -->
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.0.0"></script>
     <script src="client-api.js"></script>
-    <script src="admin.js"></script>
+    <script type="module" src="admin.js"></script>
 
     <!-- Edit Complaint Modal -->
     <div id="edit-complaint-modal" class="modal"
@@ -890,7 +914,11 @@
                     <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Emel Rasmi
                         Syarikat</label>
                     <input type="email" id="reg-company-email" placeholder="syarikat@gmail.com" required
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;"
+                        oninput="document.getElementById('reg-company-email-error').style.display = 'none'">
+                    <div id="reg-company-email-error"
+                        style="color: #e74c3c; font-size: 0.8rem; margin-top: 5px; display: none; font-weight: 600;">
+                        Email telah didaftarkan, sila gunakan email lain.</div>
                 </div>
 
                 <div style="display: flex; gap: 15px; margin-bottom: 15px;">
@@ -939,10 +967,31 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Kata Laluan
-                        Sementara</label>
-                    <input type="password" id="reg-company-password" placeholder="••••••••" required
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Kata
+                        Laluan</label>
+                    <div class="password-field-container">
+                        <input type="password" id="reg-company-password" placeholder="••••••••" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; padding-right: 40px;"
+                            oninput="checkPasswordStrength('reg-company-password', 'company')">
+                        <i class="fas fa-eye password-toggle-icon"
+                            onclick="toggleRegPassword('reg-company-password', this)"></i>
+                    </div>
+                    <!-- Strength Meter -->
+                    <div id="company-strength-meter" class="strength-meter">
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                    </div>
+                    <!-- Hints -->
+                    <div class="password-hints">
+                        <div id="company-hint-upper" class="hint-item"><i class="fas fa-circle"></i> Huruf Besar (A)
+                        </div>
+                        <div id="company-hint-lower" class="hint-item"><i class="fas fa-circle"></i> Huruf Kecil (a)
+                        </div>
+                        <div id="company-hint-special" class="hint-item"><i class="fas fa-circle"></i> Simbol (@)</div>
+                        <div id="company-hint-number" class="hint-item"><i class="fas fa-circle"></i> Nombor (1)</div>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 10px;">
@@ -985,7 +1034,11 @@
                     <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Emel
                         Rasmi</label>
                     <input type="email" id="reg-admin-email" placeholder="nama@email.com" required
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;"
+                        oninput="document.getElementById('reg-admin-email-error').style.display = 'none'">
+                    <div id="reg-admin-email-error"
+                        style="color: #e74c3c; font-size: 0.8rem; margin-top: 5px; display: none; font-weight: 600;">
+                        Email telah didaftarkan, sila gunakan email lain.</div>
                     <small style="color: #666; display: block; margin-top: 5px;">*Gunakan emel rasmi untuk pendaftaran
                         admin.</small>
                 </div>
@@ -1014,10 +1067,29 @@
                 </div>
 
                 <div class="form-group" style="margin-bottom: 20px;">
-                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Kata Laluan
-                        Sementara</label>
-                    <input type="password" id="reg-admin-password" placeholder="••••••••" required
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Kata
+                        Laluan</label>
+                    <div class="password-field-container">
+                        <input type="password" id="reg-admin-password" placeholder="••••••••" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; padding-right: 40px;"
+                            oninput="checkPasswordStrength('reg-admin-password', 'admin')">
+                        <i class="fas fa-eye password-toggle-icon"
+                            onclick="toggleRegPassword('reg-admin-password', this)"></i>
+                    </div>
+                    <!-- Strength Meter -->
+                    <div id="admin-strength-meter" class="strength-meter">
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                    </div>
+                    <!-- Hints -->
+                    <div class="password-hints">
+                        <div id="admin-hint-upper" class="hint-item"><i class="fas fa-circle"></i> Huruf Besar (A)</div>
+                        <div id="admin-hint-lower" class="hint-item"><i class="fas fa-circle"></i> Huruf Kecil (a)</div>
+                        <div id="admin-hint-special" class="hint-item"><i class="fas fa-circle"></i> Simbol (@)</div>
+                        <div id="admin-hint-number" class="hint-item"><i class="fas fa-circle"></i> Nombor (1)</div>
+                    </div>
                 </div>
 
                 <div style="display: flex; gap: 10px;">

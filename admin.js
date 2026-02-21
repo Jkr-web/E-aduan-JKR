@@ -1,3 +1,7 @@
+import { secondaryAuth, db } from './firebase-config.js';
+import { createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { collection, getDocs, query, orderBy, doc, setDoc, deleteDoc, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
 document.addEventListener('DOMContentLoaded', () => {
     // Initialize Clock & Weather
     initClockAndWeather();
@@ -294,6 +298,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                     if (targetId === 'laporan-admin') {
                         if (typeof renderReportTable === 'function') renderReportTable();
+                    }
+                    if (targetId === 'reset-requests') {
+                        if (typeof renderResetRequests === 'function') renderResetRequests();
                     }
                 } else {
                     sec.classList.remove('active');
@@ -1002,10 +1009,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <!-- Action Buttons at the Bottom -->
                 <div style="background: #f8f9fa; padding: 12px 20px; display: flex; justify-content: flex-end; gap: 15px; border-top: 1px solid #eee;">
-                    <button onclick="editContractor('${c.regNo}')" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                    <button onclick="editContractor('${c.regNo}')" class="btn-edit-animate" style="background: #3498db; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-edit"></i> Edit Syarikat
                     </button>
-                    <button onclick="deleteContractor('${c.regNo}')" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                    <button onclick="deleteContractor('${c.regNo}')" class="btn-delete-animate" style="background: #e74c3c; color: white; border: none; padding: 8px 15px; border-radius: 6px; cursor: pointer; font-size: 0.85rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-trash"></i> Padam
                     </button>
                 </div>
@@ -1073,11 +1080,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 </div>
                 <!-- Action Buttons at the Bottom -->
                 <div style="background: #f8f9fa; padding: 10px 20px; display: flex; justify-content: flex-end; gap: 10px; border-top: 1px solid #eee;">
-                    <button onclick="editAdmin('${a.email}')" style="background: #3498db; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                    <button onclick="editAdmin('${a.email}')" class="btn-edit-animate" style="background: #3498db; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-edit"></i> Edit Info
                     </button>
                     ${!isMe ? `
-                    <button onclick="deleteAdmin('${a.email}')" style="background: #e74c3c; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                    <button onclick="deleteAdmin('${a.email}')" class="btn-delete-animate" style="background: #e74c3c; color: white; border: none; padding: 6px 15px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 8px;">
                         <i class="fas fa-trash"></i> Padam Akaun Admin
                     </button>` : ''}
                 </div>
@@ -1132,8 +1139,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
+                // PASSWORD STRENGTH CHECK
+                const isValidPassword = checkPasswordStrength('reg-company-password', 'company');
+                if (!isValidPassword) {
+                    alert("Kata laluan mestilah mengandungi Huruf Besar, Huruf Kecil, Simbol dan Nombor.");
+                    return;
+                }
+
+                // 1. CREATE IN FIREBASE AUTH FIRST
+                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                const uid = userCredential.user.uid;
+                console.log("Firebase Auth Success. UID created:", uid);
+
+                // 2. SAVE TO FIRESTORE (Create UID & Profile Mapping)
+                const firestoreProfile = {
+                    uid, name, email, role: 'contractor', regNo, username,
+                    createdAt: new Date().toISOString()
+                };
+                await setDoc(doc(db, "users", uid), firestoreProfile);
+                console.log("Firestore Profile Created for UID:", uid);
+
+                // 3. SAVE TO SHEETS (WITHOUT PASSWORD)
                 const newContractor = {
-                    name, username, email, offphone: fOffPhone, mobile: fMobile, role: 'contractor', regNo, scope, startDate, endDate, password, createdBy
+                    name, username, email, offphone: fOffPhone, mobile: fMobile, role: 'contractor', regNo, scope, startDate, endDate, createdBy
                 };
 
                 const success = await API.appendRecord('Kontraktor', newContractor);
@@ -1158,7 +1186,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch (err) {
                 console.error("Contractor Registration Error:", err);
-                alert("Gagal mendaftar syarikat baru.");
+                if (err.code === 'auth/email-already-in-use') {
+                    const errorEl = document.getElementById('reg-company-email-error');
+                    if (errorEl) errorEl.style.display = 'block';
+                } else {
+                    alert("Gagal mendaftar syarikat baru: " + (err.message || "Sila cuba lagi."));
+                }
             }
         });
     }
@@ -1203,7 +1236,31 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                const newAdmin = { name, username, email, position, offphone: fOffPhone, mobile: fMobile, role: 'admin', password, createdBy: localStorage.getItem('userName') || 'Admin' };
+                // PASSWORD STRENGTH CHECK
+                const isValidPassword = checkPasswordStrength('reg-admin-password', 'admin');
+                if (!isValidPassword) {
+                    alert("Kata laluan mestilah mengandungi Huruf Besar, Huruf Kecil, Simbol dan Nombor.");
+                    return;
+                }
+
+                // 1. CREATE IN FIREBASE AUTH FIRST
+                const userCredential = await createUserWithEmailAndPassword(secondaryAuth, email, password);
+                const uid = userCredential.user.uid;
+                console.log("Firebase Admin Auth Success. UID created:", uid);
+
+                // 2. SAVE TO FIRESTORE (Create UID & Profile Mapping)
+                const firestoreProfile = {
+                    uid, name, email, role: 'admin', username,
+                    createdAt: new Date().toISOString()
+                };
+                await setDoc(doc(db, "users", uid), firestoreProfile);
+                console.log("Firestore Admin Profile Created for UID:", uid);
+
+                // 3. SAVE TO SHEETS (WITHOUT PASSWORD)
+                const newAdmin = {
+                    name, username, email, position, offphone: fOffPhone, mobile: fMobile, role: 'admin',
+                    createdBy: localStorage.getItem('userName') || 'Admin'
+                };
 
                 const success = await API.appendRecord('Admin', newAdmin);
 
@@ -1226,7 +1283,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
             } catch (err) {
                 console.error("Admin Registration Error:", err);
-                alert("Gagal mendaftar admin baru.");
+                if (err.code === 'auth/email-already-in-use') {
+                    const errorEl = document.getElementById('reg-admin-email-error');
+                    if (errorEl) errorEl.style.display = 'block';
+                } else {
+                    alert("Gagal mendaftar admin baru: " + (err.message || "Sila cuba lagi."));
+                }
             }
         });
     }
@@ -1260,9 +1322,21 @@ document.addEventListener('DOMContentLoaded', () => {
             const success = await API.deleteRecord('Admin', 'email', email);
 
             if (success) {
-                // Refresh list
+                // 1. CLEANUP FIRESTORE PROFILE
+                try {
+                    const q = query(collection(db, "users"), where("email", "==", targetEmail));
+                    const snapshot = await getDocs(q);
+                    snapshot.forEach(async (d) => {
+                        await deleteDoc(doc(db, "users", d.id));
+                    });
+                    console.log("Firestore profile cleaned up for:", targetEmail);
+                } catch (fsErr) {
+                    console.error("Firestore Cleanup Fail:", fsErr);
+                }
+
+                // 2. REFRESH LIST
                 renderAdminList();
-                alert("Akaun admin telah dipadam.");
+                alert("Akaun admin telah dipadam dari Sheets & Firestore. Sila padam akaun di Firebase Authentication secara manual untuk pemadaman penuh.");
             }
         } catch (e) {
             console.error("Delete Admin Error:", e);
@@ -1416,8 +1490,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const success = await API.deleteRecord('Kontraktor', 'regNo', regNo);
 
                 if (success) {
+                    // 1. CLEANUP FIRESTORE PROFILE
+                    try {
+                        const q = query(collection(db, "users"), where("regNo", "==", regNo));
+                        const snapshot = await getDocs(q);
+                        snapshot.forEach(async (d) => {
+                            await deleteDoc(doc(db, "users", d.id));
+                        });
+                        console.log("Firestore profile cleaned up for regNo:", regNo);
+                    } catch (fsErr) {
+                        console.error("Firestore Cleanup Fail:", fsErr);
+                    }
+
                     renderContractorList();
-                    alert("Kontraktor berjaya dipadam.");
+                    alert("Kontraktor dipadam dari Sheets & Firestore. Sila padam akaun di Firebase Authentication secara manual.");
                 }
             } catch (e) {
                 console.error(e);
@@ -2094,10 +2180,19 @@ window.applyGlobalBranding = function () {
     const savedSettings = JSON.parse(localStorage.getItem('appSettings') || '{}');
     const header = document.querySelector('.sidebar-header');
 
-    // 1. Apply System Name
-    if (header && savedSettings.systemName) {
+    // 1. Apply System Name & Subtitle
+    if (header) {
         const h2 = header.querySelector('h2');
-        if (h2) h2.textContent = savedSettings.systemName.toUpperCase();
+        if (h2 && savedSettings.systemName) {
+            h2.textContent = savedSettings.systemName.toUpperCase();
+        }
+    }
+
+    // 1.5 Apply Footer Copyright
+    const footerText = document.getElementById('footer-text');
+    if (footerText) {
+        const savedCopyright = localStorage.getItem('footerCopyright') || (savedSettings.footerCopyright || '&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara.');
+        footerText.innerHTML = savedCopyright;
     }
 
     // 2. Apply Logo to Sidebar Header
@@ -2143,6 +2238,8 @@ applyGlobalBranding();
 
     // Elements
     const systemNameInput = document.getElementById('setting-system-name');
+    const systemSubtitleInput = document.getElementById('setting-system-subtitle');
+    const footerCopyrightInput = document.getElementById('setting-footer-copyright');
     const fontSizeInput = document.getElementById('setting-font-size');
     const fontSizeValue = document.getElementById('font-size-value');
     const notifSoundSelect = document.getElementById('setting-notif-sound');
@@ -2164,6 +2261,8 @@ applyGlobalBranding();
         if (!settings) return;
 
         if (systemNameInput && settings.systemName) systemNameInput.value = settings.systemName;
+        if (systemSubtitleInput && settings.systemSubtitle) systemSubtitleInput.value = settings.systemSubtitle;
+        if (footerCopyrightInput && settings.footerCopyright) footerCopyrightInput.value = settings.footerCopyright;
         if (fontSizeInput && settings.fontSize) {
             fontSizeInput.value = settings.fontSize;
             if (fontSizeValue) fontSizeValue.textContent = settings.fontSize + 'px';
@@ -2363,6 +2462,8 @@ applyGlobalBranding();
 
             const settings = {
                 systemName: systemNameInput ? systemNameInput.value : 'Sistem Aduan Kerosakan JKR',
+                systemSubtitle: systemSubtitleInput ? systemSubtitleInput.value : 'Cawangan Selenggara Bangunan',
+                footerCopyright: footerCopyrightInput ? footerCopyrightInput.value : '&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara.',
                 fontSize: fontSizeInput ? fontSizeInput.value : '14',
                 notifSound: notifSoundSelect ? notifSoundSelect.value : 'chime',
                 notifVolume: notifVolumeInput ? notifVolumeInput.value : '70'
@@ -2392,6 +2493,16 @@ applyGlobalBranding();
                 const success = await API.updateSettings(settings);
 
                 if (!success) throw new Error("Gagal simpan ke pelayan.");
+
+                // ✅ Sync Branding to LocalStorage for login/form pages
+                localStorage.setItem('systemName', settings.systemName);
+                localStorage.setItem('systemSubtitle', settings.systemSubtitle);
+                localStorage.setItem('footerCopyright', settings.footerCopyright);
+                if (settings.appLogo) localStorage.setItem('appLogo', settings.appLogo);
+                if (settings.appBackground) localStorage.setItem('appBackground', settings.appBackground);
+
+                // Also update appSettings object if used
+                localStorage.setItem('appSettings', JSON.stringify(settings));
 
                 // Optimistic update for cache
                 window.allSettings = settings;
@@ -3194,6 +3305,100 @@ function renderStars(rating, feedback = '', animate = false) {
         </div>
     `;
 }
+// --- PASSWORD VALIDATION & STRENGTH METER ---
+window.toggleRegPassword = function (inputId, icon) {
+    const input = document.getElementById(inputId);
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+};
+
+window.checkPasswordStrength = function (inputId, type) {
+    const password = document.getElementById(inputId).value;
+    const segments = document.querySelectorAll(`#${type}-strength-meter .strength-segment`);
+
+    const hasUpper = /[A-Z]/.test(password);
+    const hasLower = /[a-z]/.test(password);
+    const hasNumber = /[0-9]/.test(password);
+    const hasSpecial = /[@$!%*?&]/.test(password);
+
+    // Update hints
+    document.getElementById(`${type}-hint-upper`).className = hasUpper ? 'hint-item valid' : 'hint-item';
+    document.getElementById(`${type}-hint-lower`).className = hasLower ? 'hint-item valid' : 'hint-item';
+    document.getElementById(`${type}-hint-number`).className = hasNumber ? 'hint-item valid' : 'hint-item';
+    document.getElementById(`${type}-hint-special`).className = hasSpecial ? 'hint-item valid' : 'hint-item';
+
+    const count = [hasUpper, hasLower, hasNumber, hasSpecial].filter(Boolean).length;
+
+    // Reset classes
+    segments.forEach(s => s.className = 'strength-segment');
+
+    // Apply colors
+    if (count > 0) {
+        for (let i = 0; i < count; i++) {
+            if (count === 1) segments[i].classList.add('active-red');
+            else if (count === 2) segments[i].classList.add('active-orange');
+            else if (count === 3) segments[i].classList.add('active-yellow');
+            else if (count === 4) segments[i].classList.add('active-green');
+        }
+    }
+
+    return count === 4; // Returns true if all criteria met
+};
+
+// --- FIREBASE RESET REQUESTS RENDERING ---
+window.renderResetRequests = async function () {
+    const listContainer = document.getElementById('reset-requests-list');
+    if (!listContainer) return;
+
+    listContainer.innerHTML = '<div style=\"padding: 30px; text-align: center;\"><i class=\"fas fa-spinner fa-spin\"></i> Memuatkan log dari Firestore...</div>';
+
+    try {
+        const q = query(collection(db, "reset_requests"), orderBy("requestedAt", "desc"));
+        const querySnapshot = await getDocs(q);
+
+        if (querySnapshot.empty) {
+            listContainer.innerHTML = '<div style=\"padding: 40px; text-align: center; color: #64748b; background: #f8fafc; border-radius: 12px; border: 2px dashed #e2e8f0;\">Tiada rekod permohonan reset kata laluan ditemui.</div>';
+            return;
+        }
+
+        listContainer.innerHTML = '';
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            const date = data.requestedAt ? data.requestedAt.toDate().toLocaleString('ms-MY') : 'Tiada Tarikh';
+
+            const item = document.createElement('div');
+            item.style.cssText = 'background: white; padding: 20px; border-radius: 12px; margin-bottom: 12px; border: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02);';
+
+            item.innerHTML = `
+                <div style="display: flex; gap: 15px; align-items: center;">
+                    <div style="width: 45px; height: 45px; background: #fef3c7; color: #d97706; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 1.2rem;">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div>
+                        <div style="font-weight: 700; color: #1e293b; font-size: 1.05rem;">${data.userName || 'Tanpa Nama'}</div>
+                        <div style="font-size: 0.85rem; color: #64748b;">${data.userEmail} <span style="margin: 0 5px; opacity: 0.3;">|</span> Peranan: <span style="text-transform: capitalize;">${data.role}</span></div>
+                    </div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 0.75rem; color: #94a3b8; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">Dimohon Pada</div>
+                    <div style="font-weight: 600; color: #475569; font-size: 0.9rem;">${date}</div>
+                </div>
+            `;
+            listContainer.appendChild(item);
+        });
+    } catch (e) {
+        console.error("Firestore Fetch Error:", e);
+        listContainer.innerHTML = '<div style=\"padding: 30px; text-align: center; color: #e74c3c;\"><i class=\"fas fa-exclamation-triangle\"></i> Gagal memuatkan data dari Firestore. Sila semak sambungan internet anda.</div>';
+    }
+};
+
 /**
  * Send WhatsApp Rating Link
  * @param {string} id - Complaint ID

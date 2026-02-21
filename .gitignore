@@ -1,0 +1,18 @@
+# System Files
+.DS_Store
+Thumbs.db
+
+# Dependencies
+node_modules/
+
+# IDE Settings
+.vscode/
+
+# Build/Package Files
+package-lock.json
+package.json
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*

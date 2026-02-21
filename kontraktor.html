@@ -576,8 +576,20 @@
                 const h2 = document.getElementById('sidebar-system-name');
                 if (h2) h2.textContent = systemName;
             }
+
+            // Apply footer copyright
+            const savedCopyright = localStorage.getItem('footerCopyright');
+            if (savedCopyright) {
+                const copyEl = document.getElementById('footer-text');
+                if (copyEl) copyEl.innerHTML = savedCopyright;
+            }
         })();
     </script>
+
+    <!-- Footer Copyright for Contractor Panel -->
+    <footer id="main-footer" class="global-footer" style="margin-left: 260px; background: white;">
+        <span id="footer-text">&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara.</span>
+    </footer>
 </body>
 
 </html>

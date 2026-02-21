@@ -798,6 +798,93 @@ button {
     }
 }
 
+/* Password Strength & Toggle Styles */
+.password-field-container {
+    position: relative;
+    width: 100%;
+}
+
+.password-toggle-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    cursor: pointer;
+    color: #64748b;
+    z-index: 10;
+    transition: color 0.2s;
+}
+
+.password-toggle-icon:hover {
+    color: #3b82f6;
+}
+
+.strength-meter {
+    height: 4px;
+    width: 100%;
+    background-color: #e2e8f0;
+    margin-top: 8px;
+    border-radius: 2px;
+    overflow: hidden;
+    display: flex;
+    gap: 3px;
+}
+
+.strength-segment {
+    flex: 1;
+    height: 100%;
+    background-color: transparent;
+    transition: background-color 0.3s ease;
+}
+
+.strength-segment.active-red {
+    background-color: #ef4444;
+}
+
+.strength-segment.active-orange {
+    background-color: #f59e0b;
+}
+
+.strength-segment.active-yellow {
+    background-color: #fbbf24;
+}
+
+.strength-segment.active-green {
+    background-color: #22c55e;
+}
+
+.password-hints {
+    font-size: 0.75rem;
+    margin-top: 8px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 5px;
+}
+
+.hint-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #94a3b8;
+    transition: color 0.2s;
+}
+
+.hint-item.valid {
+    color: #22c55e;
+}
+
+.hint-item i {
+    font-size: 0.7rem;
+}
+
+.hint-item.valid {
+    color: #22c55e;
+}
+
+.hint-item i {
+    font-size: 0.7rem;
+}
+
 @keyframes checkDraw {
     0% {
         stroke-dashoffset: 60;
@@ -897,4 +984,57 @@ button {
 /* Fix SweetAlert2 z-index to appear above the progress modal which has z-index: 2200 */
 .swal2-container {
     z-index: 9999 !important;
+}
+
+.btn-delete-animate {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(231, 76, 60, 0.2);
+}
+
+.btn-delete-animate:hover {
+    transform: translateY(-2px) scale(1.05);
+    background-color: #c0392b !important;
+    box-shadow: 0 10px 15px -3px rgba(231, 76, 60, 0.4);
+    filter: brightness(1.2);
+}
+
+.btn-delete-animate:active {
+    transform: scale(0.95);
+}
+
+.btn-delete-animate i {
+    transition: transform 0.3s ease;
+}
+
+.btn-delete-animate:hover i {
+    transform: rotate(15deg) scale(1.2);
+}
+
+.btn-edit-animate {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.btn-edit-animate:hover {
+    transform: translateY(-2px) scale(1.05);
+    background-color: #2980b9 !important;
+    box-shadow: 0 10px 15px -3px rgba(52, 152, 219, 0.4);
+}
+
+.btn-edit-animate i {
+    transition: transform 0.3s ease;
+}
+
+.btn-edit-animate:hover i {
+    transform: rotate(-15deg) scale(1.1);
+}
+
+.global-footer {
+    padding: 25px 0;
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    font-weight: 500;
+    border-top: 1px solid #f1f5f9;
 }

@@ -565,7 +565,7 @@ function renderTaskTable(tasks) {
             <div style="padding: 15px 20px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: #fafafa;">
                 <div style="display: flex; align-items: center; gap: 10px;">
                     <span style="font-weight: 800; color: #2c3e50; font-size: 1.1rem;"># ${displayId}</span>
-                    ${task.isVerified ? `<i class="fas fa-check-circle" style="color: #27ae60; font-size: 1.2rem;" title="Telah Diperiksa & Disahkan"></i>` : ''}
+                    ${(task.isVerified === true || String(task.isVerified).toUpperCase() === 'TRUE' || task.isverified === true || String(task.isverified).toUpperCase() === 'TRUE') ? `<i class="fas fa-check-circle" style="color: #27ae60; font-size: 1.2rem;" title="Telah Diperiksa & Disahkan"></i>` : ''}
                 </div>
                 <span style="background: ${statusColor}; color: white; padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase;">
                     ${statusLabel}
@@ -619,8 +619,9 @@ function renderTaskTable(tasks) {
                     </button>
                 ` : `
                     <button onclick="openUpdateModal('${taskId}')" 
-                        style="flex: 1; min-width: 150px; max-width: 250px; padding: 10px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: background 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
-                        <i class="fas fa-edit"></i> Kemaskini Tugasan
+                        style="flex: 1; min-width: 150px; max-width: 250px; padding: 10px; background: ${(task.isVerified === true || String(task.isVerified).toUpperCase() === 'TRUE' || task.isverified === true || String(task.isverified).toUpperCase() === 'TRUE') ? '#95a5a6' : '#3498db'}; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: background 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
+                        <i class="fas ${(task.isVerified === true || String(task.isVerified).toUpperCase() === 'TRUE' || task.isverified === true || String(task.isverified).toUpperCase() === 'TRUE') ? 'fa-eye' : 'fa-edit'}"></i> 
+                        ${(task.isVerified === true || String(task.isVerified).toUpperCase() === 'TRUE' || task.isverified === true || String(task.isverified).toUpperCase() === 'TRUE') ? 'Lihat Tugasan (Disahkan)' : 'Kemaskini Tugasan'}
                     </button>
                 `}
             </div>
@@ -730,7 +731,12 @@ window.openUpdateModal = async function (id) {
         // 0. RESET MODAL STATE (Enable all, show all)
         if (modal) {
             modal.querySelectorAll('textarea').forEach(t => t.disabled = false);
-            modal.querySelectorAll('button[type="button"]').forEach(b => b.style.display = ''); // Reset to default
+            modal.querySelectorAll('input[type="file"]').forEach(i => i.disabled = false);
+            modal.querySelectorAll('.upload-zone').forEach(z => z.style.display = 'flex');
+
+            const btnUpdate = document.getElementById('btn-update-task');
+            if (btnUpdate) btnUpdate.style.display = 'inline-block';
+
             const title = modal.querySelector('h3');
             if (title) title.innerHTML = 'Kemaskini Tugasan';
 
@@ -849,6 +855,30 @@ window.openUpdateModal = async function (id) {
             if (btnClockIn) {
                 // Only show clock-in if status is 'Tindakan Kontraktor'
                 btnClockIn.style.display = (complaint.status === 'Tindakan Kontraktor') ? 'inline-block' : 'none';
+            }
+
+            // --- VIEW ONLY MODE (If Verified) ---
+            const isVerified = (complaint.isVerified === true || String(complaint.isVerified).toUpperCase() === 'TRUE' || complaint.isverified === true || String(complaint.isverified).toUpperCase() === 'TRUE');
+
+            if (isVerified) {
+                const title = document.querySelector('#update-task-modal h3');
+                if (title) title.innerHTML = '<i class="fas fa-check-circle" style="color: #27ae60;"></i> Tugasan Disahkan (View Only)';
+
+                // Disable textareas
+                document.querySelectorAll('#update-task-modal textarea').forEach(t => t.disabled = true);
+
+                // Hide file upload zones
+                document.querySelectorAll('#update-task-modal .upload-zone').forEach(z => z.style.display = 'none');
+
+                // Hide save & complete buttons
+                const btnUpdate = document.getElementById('btn-update-task');
+                if (btnUpdate) btnUpdate.style.display = 'none';
+                if (btnComplete) btnComplete.style.display = 'none';
+
+                // Hide any delete buttons that might be rendered in previews (need to wait for renderPreview)
+                setTimeout(() => {
+                    document.querySelectorAll('#update-task-modal .delete-btn').forEach(d => d.style.display = 'none');
+                }, 100);
             }
 
             document.getElementById('update-task-modal').style.display = 'flex';

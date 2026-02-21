@@ -25,6 +25,7 @@
             const savedLogo = localStorage.getItem('appLogo');
             const savedBg = localStorage.getItem('appBackground');
             const savedName = localStorage.getItem('systemName');
+            const savedCopyright = localStorage.getItem('footerCopyright');
 
             if (savedBg) {
                 document.documentElement.style.setProperty('--bg-image', `url('${savedBg}')`);
@@ -45,6 +46,10 @@
                 if (savedName) {
                     const h1 = document.querySelector('header h1');
                     if (h1) h1.textContent = savedName;
+                }
+                if (savedCopyright) {
+                    const copyEl = document.getElementById('footer-copyright-text');
+                    if (copyEl) copyEl.innerHTML = savedCopyright;
                 }
             });
         })();
@@ -68,6 +73,11 @@
     <div id="app-container" class="container">
         <!-- Form will be injected here by JavaScript -->
     </div>
+
+    <!-- Footer Copyright -->
+    <footer style="margin: 40px 0 20px; text-align: center; color: #7f8c8d; font-size: 0.85rem; font-weight: 500;">
+        <p id="footer-copyright-text">&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara.</p>
+    </footer>
 
     <!-- Toast Notification Container -->
     <div id="toast"></div>
