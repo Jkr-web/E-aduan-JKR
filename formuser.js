@@ -156,10 +156,17 @@ window.renderComplaintForm = function (containerId) {
                 document.body.style.backgroundAttachment = 'fixed';
             }
 
+            // 4. Update Copyright
+            if (settings.footerCopyright) {
+                const copyEl = document.getElementById('footer-copyright-text');
+                if (copyEl) copyEl.innerHTML = settings.footerCopyright;
+            }
+
             // Sync to LocalStorage for offline/fast load next time
             if (settings.appLogo) localStorage.setItem('appLogo', settings.appLogo);
             if (settings.appBackground) localStorage.setItem('appBackground', settings.appBackground);
             if (settings.systemName) localStorage.setItem('systemName', settings.systemName);
+            if (settings.footerCopyright) localStorage.setItem('footerCopyright', settings.footerCopyright);
 
         } catch (e) {
             console.warn("Branding sync failed.", e);
@@ -303,9 +310,12 @@ window.renderComplaintForm = function (containerId) {
                 }
 
                 let rawPhone = document.getElementById('no-telefon').value.trim();
+                rawPhone = rawPhone.replace(/^'/, ''); // remove existing quote if any
                 if (rawPhone && !rawPhone.startsWith('0') && !rawPhone.startsWith('+') && !rawPhone.startsWith('6')) {
                     rawPhone = '0' + rawPhone;
                 }
+                // Prepend quote to avoid Sheets dropping leading zero
+                rawPhone = "'" + rawPhone;
 
                 // 4. Create Complaint Object
                 const newComplaint = {

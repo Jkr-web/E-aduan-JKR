@@ -1744,7 +1744,7 @@ document.addEventListener('DOMContentLoaded', () => {
 }); // End DOMContentLoaded
 
 // Global Function for Sharing Link (defined outside so it's accessible via onclick)
-function shareComplaintLink() {
+window.shareComplaintLink = function () {
     // Construct the absolute URL for the formuser.html
     const currentUrl = window.location.href;
     const baseUrl = currentUrl.substring(0, currentUrl.lastIndexOf('/'));
@@ -1970,7 +1970,7 @@ function timeAgo(date) {
     return "Baru sebentar tadi";
 }
 // QRCode Generation
-function generateQRCode() {
+window.generateQRCode = function () {
     const qrContainer = document.getElementById('qr-code-container');
     const qrcodeDiv = document.getElementById('qrcode');
 
@@ -2012,7 +2012,7 @@ function generateQRCode() {
 }
 
 // Download QRCode
-function downloadQRCode() {
+window.downloadQRCode = function () {
     const qrcodeDiv = document.getElementById('qrcode');
     const img = qrcodeDiv.querySelector('img');
 
@@ -2028,7 +2028,7 @@ function downloadQRCode() {
     }
 }
 
-function closeQRCode() {
+window.closeQRCode = function () {
     const qrContainer = document.getElementById('qr-code-container');
     if (qrContainer) {
         qrContainer.style.display = 'none';
