@@ -721,141 +721,143 @@ window.clockIn = async function (id) {
 // Modal Functions
 // Modal Functions
 window.openUpdateModal = async function (id) {
-    // 0. RESET MODAL STATE (Enable all, show all)
-    const modal = document.getElementById('update-task-modal');
-    if (modal) {
-        modal.querySelectorAll('textarea').forEach(t => t.disabled = false);
-        modal.querySelectorAll('button[type="button"]').forEach(b => b.style.display = ''); // Reset to default
-        const title = modal.querySelector('h3');
-        if (title) title.innerHTML = 'Kemaskini Tugasan';
-
-        // Ensure buttons that are logic-dependent are hidden initially
+    console.log("Opening Update Modal for ID:", id);
+    try {
+        const modal = document.getElementById('update-task-modal');
         const btnComplete = document.getElementById('btn-complete-task');
         const btnClockIn = document.getElementById('btn-clock-in');
-        if (btnComplete) btnComplete.style.display = 'none';
-        if (btnClockIn) btnClockIn.style.display = 'none';
-    }
 
-    let complaint = null;
+        // 0. RESET MODAL STATE (Enable all, show all)
+        if (modal) {
+            modal.querySelectorAll('textarea').forEach(t => t.disabled = false);
+            modal.querySelectorAll('button[type="button"]').forEach(b => b.style.display = ''); // Reset to default
+            const title = modal.querySelector('h3');
+            if (title) title.innerHTML = 'Kemaskini Tugasan';
 
-    // 1. Try Global Cache First
-    if (window.allComplaints && Array.isArray(window.allComplaints)) {
-        complaint = window.allComplaints.find(c => (c['no. aduan'] || c.id) == id);
-    }
+            // Ensure buttons that are logic-dependent are hidden initially
+            if (btnComplete) btnComplete.style.display = 'none';
+            if (btnClockIn) btnClockIn.style.display = 'none';
+        }
 
-    // 2. Fetch if not found
-    if (!complaint) {
-        try {
-            const data = await API.getAll();
-            window.allComplaints = data.complaints || []; // Update Cache
+        let complaint = null;
+
+        // 1. Try Global Cache First
+        if (window.allComplaints && Array.isArray(window.allComplaints)) {
             complaint = window.allComplaints.find(c => (c['no. aduan'] || c.id) == id);
-        } catch (e) {
-            console.error("Fetch Error:", e);
-            alert("Ralat sambungan. Sila periksa internet anda.");
-            return;
-        }
-    }
-
-    if (complaint) {
-        document.getElementById('task-id').value = complaint.id;
-
-        // Populate Read-Only Details
-        const safeText = (text) => text || '-';
-        document.getElementById('modal-display-id').textContent = safeText(complaint.id);
-
-        // Fix Date & Time Format
-        const fullDate = `${complaint['tarikh aduan'] || complaint.date || ''} ${complaint['masa aduan'] || complaint.time || ''}`.trim();
-        document.getElementById('modal-display-date').textContent = formatDisplayDate(fullDate);
-
-        document.getElementById('modal-display-name').textContent = safeText(complaint['nama'] || complaint.name);
-        document.getElementById('modal-display-phone').textContent = safeText(complaint['no. telefon'] || complaint.phone);
-        document.getElementById('modal-display-location').textContent = safeText(complaint['lokasi kerosakan'] || complaint.location);
-        document.getElementById('modal-display-desc').textContent = complaint['keterangan aduan'] || complaint.description || 'Tiada keterangan.';
-
-        // Image Handling (Main Complaint Image)
-        const imgContainer = document.getElementById('modal-image-container');
-        const imgEl = document.getElementById('modal-display-image');
-        if (complaint.image) {
-            imgEl.src = complaint.image;
-            imgContainer.style.display = 'block';
-        } else {
-            imgContainer.style.display = 'none';
         }
 
-        // --- POPULATE OFFICER INFO ---
-        const officerContainer = document.getElementById('modal-officer-container');
-        if (complaint.assignedBy) {
-            officerContainer.style.display = 'block';
-            document.getElementById('modal-officer-name').textContent = complaint.assignedBy.name || '-';
-            document.getElementById('modal-officer-position').textContent = complaint.assignedBy.position || '-';
-            document.getElementById('modal-officer-phone').textContent = complaint.assignedBy.phone || '-';
-            document.getElementById('modal-officer-email').textContent = complaint.assignedBy.email || '-';
-
-            const assignedDateEl = document.getElementById('modal-assigned-date');
-            if (assignedDateEl) assignedDateEl.textContent = complaint.assignedDate || '-';
-        } else {
-            const assignedDateEl = document.getElementById('modal-assigned-date');
-            if (assignedDateEl) assignedDateEl.textContent = formatDisplayDate(complaint['tarikh lantikan'] || complaint.assignedDate);
-            officerContainer.style.display = 'block'; // Show anyway if we have assignedDate
-            if (!complaint.assignedBy) {
-                document.getElementById('modal-officer-name').textContent = 'Admin JKR';
+        // 2. Fetch if not found
+        if (!complaint) {
+            try {
+                const data = await API.getAll();
+                window.allComplaints = data.complaints || []; // Update Cache
+                complaint = window.allComplaints.find(c => (c['no. aduan'] || c.id) == id);
+            } catch (e) {
+                console.error("Fetch Error:", e);
+                alert("Ralat sambungan. Sila periksa internet anda.");
+                return;
             }
         }
 
-        // Initialize Manual Completion Date/Time
-        const now = new Date();
-        document.getElementById('complete-date-manual').value = now.toISOString().split('T')[0];
-        document.getElementById('complete-time-manual').value = now.toTimeString().split(' ')[0].substring(0, 5);
+        if (complaint) {
+            document.getElementById('task-id').value = complaint.id;
 
-        // --- POPULATE PROGRESS FIELDS ---
-        const progress = complaint.progress || {};
+            // Populate Read-Only Details
+            const safeText = (text) => text || '-';
+            document.getElementById('modal-display-id').textContent = safeText(complaint.id);
 
-        // Initialize local state
-        currentTaskImages = {
-            before: progress.before?.images || [],
-            during: progress.during?.images || [],
-            after: progress.after?.images || []
-        };
+            // Fix Date & Time Format
+            const fullDate = `${complaint['tarikh aduan'] || complaint.date || ''} ${complaint['masa aduan'] || complaint.time || ''}`.trim();
+            document.getElementById('modal-display-date').textContent = formatDisplayDate(fullDate);
 
-        // Before
-        document.getElementById('notes-before').value = progress.before?.notes || '';
-        renderPreview('preview-before', currentTaskImages.before, 'before');
+            document.getElementById('modal-display-name').textContent = safeText(complaint['nama'] || complaint.name);
+            document.getElementById('modal-display-phone').textContent = safeText(complaint['no. telefon'] || complaint.phone);
+            document.getElementById('modal-display-location').textContent = safeText(complaint['lokasi kerosakan'] || complaint.location);
+            document.getElementById('modal-display-desc').textContent = complaint['keterangan aduan'] || complaint.description || 'Tiada keterangan.';
 
-        // During
-        document.getElementById('notes-during').value = progress.during?.notes || '';
-        renderPreview('preview-during', currentTaskImages.during, 'during');
+            // Image Handling (Main Complaint Image)
+            const imgContainer = document.getElementById('modal-image-container');
+            const imgEl = document.getElementById('modal-display-image');
+            if (complaint.image) {
+                imgEl.src = complaint.image;
+                imgContainer.style.display = 'block';
+            } else {
+                imgContainer.style.display = 'none';
+            }
 
-        // After
-        document.getElementById('notes-after').value = progress.after?.notes || '';
-        renderPreview('preview-after', currentTaskImages.after, 'after');
+            // --- POPULATE OFFICER INFO ---
+            const officerContainer = document.getElementById('modal-officer-container');
+            if (complaint.assignedBy) {
+                officerContainer.style.display = 'block';
+                document.getElementById('modal-officer-name').textContent = complaint.assignedBy.name || '-';
+                document.getElementById('modal-officer-position').textContent = complaint.assignedBy.position || '-';
+                document.getElementById('modal-officer-phone').textContent = complaint.assignedBy.phone || '-';
+                document.getElementById('modal-officer-email').textContent = complaint.assignedBy.email || '-';
 
-        // Overall Contractor Notes
-        const notesOverallEl = document.getElementById('contractor-notes');
-        if (notesOverallEl) {
-            notesOverallEl.value = complaint['catatan kontraktor'] || complaint.contractorNotes || '';
+                const assignedDateEl = document.getElementById('modal-assigned-date');
+                if (assignedDateEl) assignedDateEl.textContent = complaint.assignedDate || '-';
+            } else {
+                const assignedDateEl = document.getElementById('modal-assigned-date');
+                if (assignedDateEl) assignedDateEl.textContent = formatDisplayDate(complaint['tarikh lantikan'] || complaint.assignedDate);
+                officerContainer.style.display = 'block'; // Show anyway if we have assignedDate
+                if (!complaint.assignedBy) {
+                    document.getElementById('modal-officer-name').textContent = 'Admin JKR';
+                }
+            }
+
+            // Initialize Manual Completion Date/Time
+            const now = new Date();
+            document.getElementById('complete-date-manual').value = now.toISOString().split('T')[0];
+            document.getElementById('complete-time-manual').value = now.toTimeString().split(' ')[0].substring(0, 5);
+
+            // --- POPULATE PROGRESS FIELDS ---
+            const progress = complaint.progress || {};
+
+            // Initialize local state
+            currentTaskImages = {
+                before: progress.before?.images || [],
+                during: progress.during?.images || [],
+                after: progress.after?.images || []
+            };
+
+            // Before
+            document.getElementById('notes-before').value = progress.before?.notes || '';
+            renderPreview('preview-before', currentTaskImages.before, 'before');
+
+            // During
+            document.getElementById('notes-during').value = progress.during?.notes || '';
+            renderPreview('preview-during', currentTaskImages.during, 'during');
+
+            // After
+            document.getElementById('notes-after').value = progress.after?.notes || '';
+            renderPreview('preview-after', currentTaskImages.after, 'after');
+
+            // Overall Contractor Notes
+            const notesOverallEl = document.getElementById('contractor-notes');
+            if (notesOverallEl) {
+                notesOverallEl.value = complaint['catatan kontraktor'] || complaint.contractorNotes || '';
+            }
+
+            // Visibility of Complete Button
+            if (btnComplete) {
+                const hasAfter = currentTaskImages.after.length > 0;
+                btnComplete.style.display = hasAfter ? 'inline-block' : 'none';
+                const completionContainer = document.getElementById('completion-time-container');
+                if (completionContainer) completionContainer.style.display = hasAfter ? 'block' : 'none';
+            }
+
+            if (btnClockIn) {
+                // Only show clock-in if status is 'Tindakan Kontraktor'
+                btnClockIn.style.display = (complaint.status === 'Tindakan Kontraktor') ? 'inline-block' : 'none';
+            }
+
+            document.getElementById('update-task-modal').style.display = 'flex';
+        } else {
+            alert("Tugasan tidak dijumpai.");
         }
-
-        // Visibility of Complete Button
-        const btnComplete = document.getElementById('btn-complete-task');
-        const btnClockIn = document.getElementById('btn-clock-in');
-
-        if (btnComplete) {
-            const hasAfter = currentTaskImages.after.length > 0;
-            btnComplete.style.display = hasAfter ? 'inline-block' : 'none';
-            const completionContainer = document.getElementById('completion-time-container');
-            if (completionContainer) completionContainer.style.display = hasAfter ? 'block' : 'none';
-            const notesContainer = document.getElementById('contractor-notes-container');
-            if (notesContainer) notesContainer.style.display = hasAfter ? 'block' : 'none';
-        }
-
-        if (btnClockIn) {
-            // Only show clock-in if status is 'Tindakan Kontraktor'
-            btnClockIn.style.display = (complaint.status === 'Tindakan Kontraktor') ? 'inline-block' : 'none';
-        }
-
-        document.getElementById('update-task-modal').style.display = 'flex';
-    } else {
-        alert("Tugasan tidak dijumpai.");
+    } catch (err) {
+        console.error("openUpdateModal Error:", err);
+        alert("Ralat teknikal: " + err.message);
     }
 };
 
@@ -905,21 +907,19 @@ window.deleteImage = function (stage, index, containerId) {
 
             const completionContainer = document.getElementById('completion-time-container');
             if (completionContainer) completionContainer.style.display = hasAfter ? 'block' : 'none';
-
-            const notesContainer = document.getElementById('contractor-notes-container');
-            if (notesContainer) notesContainer.style.display = hasAfter ? 'block' : 'none';
         }
     }
 };
-
 window.closeUpdateModal = function () {
-    document.getElementById('update-task-modal').style.display = 'none';
+    const modal = document.getElementById('update-task-modal');
+    if (modal) modal.style.display = 'none';
+
     // Reset complete button and containers
-    document.getElementById('btn-complete-task').style.display = 'none';
+    const btnComplete = document.getElementById('btn-complete-task');
+    if (btnComplete) btnComplete.style.display = 'none';
+
     const completionContainer = document.getElementById('completion-time-container');
     if (completionContainer) completionContainer.style.display = 'none';
-    const notesContainer = document.getElementById('contractor-notes-container');
-    if (notesContainer) notesContainer.style.display = 'none';
 }
 
 // Handle Form Submission (Update vs Complete)

@@ -31,14 +31,22 @@ function doGet(e) {
  */
 function doPost(e) {
   if (!isValidRequest(e)) return createJsonResponse({ status: 'error', message: 'Akses Ditolak: Tiada Kebenaran' });
-  if (!e.postData || !e.postData.contents) return createJsonResponse({ status: 'error', message: 'Tiada data dihantar' });
-
+  
   const lock = LockService.getScriptLock();
   try {
     lock.waitLock(30000); // Wait up to 30s for lock
 
-    // Parse Body
-    const postData = JSON.parse(e.postData.contents);
+    let postData = {};
+    if (e.postData && e.postData.contents) {
+      try {
+        postData = JSON.parse(e.postData.contents);
+      } catch (err) {
+        // Fallback if not JSON (e.g. from standard form)
+        postData = e.parameter;
+      }
+    } else {
+      postData = e.parameter;
+    }
     
     // DETECT ACTION (Check URL first, then Body) - Case Insensitive
     let action = (e.parameter.action || postData.action || "").toString().toLowerCase().trim();

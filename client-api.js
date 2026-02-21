@@ -1,5 +1,5 @@
 // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-const API_URL = 'https://script.google.com/macros/s/AKfycbznlCAJHeb1ZFB3Mo6UEXM1NW24ZVn6kPLN-ugB9gvpzf3uudIUshzPN__YpmLHNpqz/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzhwOBcZ4x8nP049c9o11cDxNowdjsVsfXVAm5VQt8vz8Cgl_-p2OpR532lGzvTvVx6/exec';
 
 // --- TOKEN KESELAMATAN (Mesti sama dengan di Google Apps Script) ---
 const AUTH_TOKEN = "https://github.com/Jkr-web/E-aduan-JKR";

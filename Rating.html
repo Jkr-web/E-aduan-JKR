@@ -245,26 +245,47 @@
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghantar...';
 
-            // URL Web App anda dari client-api.js
             const api_url = 'https://script.google.com/macros/s/AKfycbznlCAJHeb1ZFB3Mo6UEXM1NW24ZVn6kPLN-ugB9gvpzf3uudIUshzPN__YpmLHNpqz/exec';
             const token = "https://github.com/Jkr-web/E-aduan-JKR";
 
             try {
-                // Gunakan URLSearchParams untuk penghantaran data yang lebih serasi dengan Google Script
-                const payload = new URLSearchParams();
-                payload.append('rating', selectedRating);
-                payload.append('feedback', feedback);
+                // Gunakan iframe + form submission untuk hantaran POST yang lebih dipercayai oleh Google Apps Script (tiada isu CORS)
+                const iframeName = 'rating_iframe';
+                let iframe = document.querySelector(`iframe[name="${iframeName}"]`);
+                if (!iframe) {
+                    iframe = document.createElement('iframe');
+                    iframe.name = iframeName;
+                    iframe.style.display = 'none';
+                    document.body.appendChild(iframe);
+                }
 
-                // POST ke Google Script menggunakan mode: 'no-cors'
-                // Kami menghantar data dalam URL untuk kepastian simpanan yang lebih tinggi bagi 'no-cors'
-                await fetch(`${api_url}?token=${token}&action=submit_rating&id=${encodeURIComponent(complaintId)}&rating=${selectedRating}&feedback=${encodeURIComponent(feedback)}`, {
-                    method: 'POST',
-                    mode: 'no-cors'
-                });
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `${api_url}?token=${token}&action=submit_rating&id=${encodeURIComponent(complaintId)}`;
+                form.target = iframeName;
 
-                // Kerana no-cors, kita tidak boleh baca response. Kita andaikan sukses.
-                document.getElementById('form-container').style.display = 'none';
-                document.getElementById('thankyou').style.display = 'block';
+                const ratingInput = document.createElement('input');
+                ratingInput.type = 'hidden';
+                ratingInput.name = 'rating';
+                ratingInput.value = selectedRating;
+                form.appendChild(ratingInput);
+
+                const feedbackInput = document.createElement('input');
+                feedbackInput.type = 'hidden';
+                feedbackInput.name = 'feedback';
+                feedbackInput.value = feedback;
+                form.appendChild(feedbackInput);
+
+                document.body.appendChild(form);
+                form.submit();
+
+                // Tunggu sebentar untuk simulasi hantaran
+                setTimeout(() => {
+                    document.body.removeChild(form);
+                    document.getElementById('form-container').style.display = 'none';
+                    document.getElementById('thankyou').style.display = 'block';
+                }, 1500);
+
             } catch (e) {
                 console.error(e);
                 alert("Gagal menghantar penilaian. Sila cuba lagi.");
