@@ -668,27 +668,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 document.getElementById('modal-task-desc').value = complaints[index].taskDescription || '';
 
-                // ✅ AUTO-GENERATE NO. RUJUKAN (CMD-XXXX/YEAR)
                 const refInput = document.getElementById('modal-contractor-ref');
                 if (refInput) {
-                    if (complaints[index]['no. rujukan kontraktor'] || complaints[index].contractorRefNo) {
-                        // Jika sudah ada, kekalkan yang lama (sokong kunci lama sebagai fallback)
-                        refInput.value = complaints[index]['no. rujukan kontraktor'] || complaints[index].contractorRefNo;
-                    } else {
-                        // Jana baru berurutan bagi tahun semasa
-                        const year = new Date().getFullYear();
-                        const allComplaints = window.allComplaints || [];
-                        const existingRefs = allComplaints.filter(c => {
-                            const ref = c['no. rujukan kontraktor'] || c.contractorRefNo || '';
-                            return ref.includes(`/${year}`);
-                        }).length;
-                        const nextNum = (existingRefs + 1).toString().padStart(4, '0');
-                        refInput.value = `CMD-${nextNum}/${year}`;
-                    }
-                    // Jadikan readonly supaya tidak perlu isi manual
-                    refInput.readOnly = true;
-                    refInput.style.backgroundColor = '#f8f9fa';
-                    refInput.style.cursor = 'not-allowed';
+                    refInput.value = complaints[index]['no. rujukan kontraktor'] || complaints[index].contractorRefNo || '';
                 }
 
                 document.getElementById('assign-contractor-modal').style.display = 'flex';
@@ -714,7 +696,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const id = document.getElementById('edit-id').value;
         const contractor = document.getElementById('modal-contractor-select').value;
         const taskDesc = document.getElementById('modal-task-desc').value;
-        const contractorRefNo = (document.getElementById('modal-contractor-ref')?.value || '').trim();
+        let contractorRefNo = (document.getElementById('modal-contractor-ref')?.value || '').trim();
 
         if (!contractor) {
             alert("Sila pilih syarikat kontraktor.");
@@ -752,6 +734,38 @@ document.addEventListener('DOMContentLoaded', () => {
                 const mainNotes = document.getElementById('edit-notes');
                 if (mainNotes) {
                     complaints[index]['catatan admin'] = mainNotes.value;
+                }
+
+                // Auto-generate No. Rujukan based on contractor name if it is empty
+                if (!contractorRefNo) {
+                    const year = new Date().getFullYear();
+
+                    // Get initials from contractor name
+                    const words = contractor.trim().split(/\s+/);
+                    let initials = 'CMD';
+                    if (words.length > 0 && contractor.trim() !== '') {
+                        if (words.length === 1) {
+                            initials = words[0].substring(0, 3).toUpperCase();
+                        } else {
+                            initials = words.map(w => w[0]).join('').toUpperCase().substring(0, 4);
+                        }
+                    }
+
+                    // Count how many jobs THIS specific contractor has received THIS year
+                    const allComplaints = window.allComplaints || [];
+                    const contractorJobCount = allComplaints.filter(c => {
+                        const assignedContractor = c['kontraktor dilantik'] || c.contractor || '';
+                        const ref = c['no. rujukan kontraktor'] || c.contractorRefNo || '';
+                        const dateStr = c['tarikh lantikan'] || c.assignedDate || c.timestamp || '';
+
+                        const isSameContractor = (assignedContractor === contractor);
+                        const isThisYear = ref.includes(`/${year}`) || dateStr.includes(year.toString());
+
+                        return isSameContractor && isThisYear;
+                    }).length;
+
+                    const nextNum = (contractorJobCount + 1).toString().padStart(4, '0');
+                    contractorRefNo = `${initials}-${nextNum}/${year}`;
                 }
 
                 complaints[index]['kontraktor dilantik'] = contractor;
