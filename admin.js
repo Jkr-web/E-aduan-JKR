@@ -453,7 +453,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             </button>
                         </div>
 
-                        <!-- RIGHT SIDE: Status Badge Only if Verified -->
+                         <!-- RIGHT SIDE: Status Badge Only if Verified -->
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
                             ${(c.isVerified === true || String(c.isVerified).toUpperCase() === 'TRUE' || c.isverified === true || String(c.isverified).toUpperCase() === 'TRUE' || c.isVerified === 'VERIFIED') ? `
                                 <div style="display: flex; flex-direction: column; align-items: flex-end;">
@@ -463,7 +463,14 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <div style="font-size: 10px; color: #7f8c8d; margin-top: 4px; font-weight: 600;">
                                         Disahkan pada: ${c.verifiedDate || c.verifieddate ? new Date(c.verifiedDate || c.verifieddate).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
                                     </div>
+                                    <button onclick="event.stopPropagation(); sendRatingWhatsApp('${c['no. aduan'] || c.id}')" style="margin-top: 5px; padding: 4px 10px; background: #25d366; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 10px; font-weight: 700; display: flex; align-items: center; gap: 5px;">
+                                        <i class="fab fa-whatsapp"></i> Hantar Link Rating
+                                    </button>
                                 </div>
+                            ` : (c.status === 'Selesai') ? `
+                                <button onclick="event.stopPropagation(); sendRatingWhatsApp('${c['no. aduan'] || c.id}')" style="padding: 6px 12px; background: #25d366; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 700; display: flex; align-items: center; gap: 6px;">
+                                    <i class="fab fa-whatsapp"></i> WhatsApp Rating
+                                </button>
                             ` : ''}
                         </div>
                     </div>
@@ -3187,3 +3194,38 @@ function renderStars(rating, feedback = '', animate = false) {
         </div>
     `;
 }
+/**
+ * Send WhatsApp Rating Link
+ * @param {string} id - Complaint ID
+ */
+window.sendRatingWhatsApp = function (id) {
+    const complaints = window.allComplaints || [];
+    const c = complaints.find(item => (item.id == id || item['no. aduan'] == id));
+
+    if (!c) {
+        alert("Data aduan tidak dijumpai.");
+        return;
+    }
+
+    const phone = c['no. telefon'] || c.phone;
+    if (!phone) {
+        alert("No. telefon pengadu tidak dijumpai.");
+        return;
+    }
+
+    // Format phone number (Remove non-digits, ensure starts with 6 for Malaysia)
+    let formattedPhone = phone.replace(/\D/g, '');
+    if (formattedPhone.startsWith('0')) {
+        formattedPhone = '6' + formattedPhone;
+    } else if (!formattedPhone.startsWith('6')) {
+        formattedPhone = '60' + formattedPhone;
+    }
+
+    const baseUrl = window.location.origin + window.location.pathname.replace('main.html', '').replace('index.html', '');
+    const ratingUrl = `${baseUrl}Rating.html?id=${encodeURIComponent(id)}`;
+
+    const message = `Salamuan *${c.name || 'Tuan/Puan'}*,\n\nAduan kerosakan anda dengan ID *${id}* telah selesai dilaksanakan.\n\nSila berikan maklum balas & penilaian (rating) anda melalui pautan di bawah:\n\n${ratingUrl}\n\nTerima kasih atas kerjasama anda.\n*- JKR ADUAN SISTEM -*`;
+
+    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+    window.open(waUrl, '_blank');
+};
