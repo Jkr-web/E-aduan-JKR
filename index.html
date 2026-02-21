@@ -267,6 +267,69 @@
             cursor: pointer;
             font-weight: 600;
         }
+
+        /* Error States & Animations */
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            10%,
+            30%,
+            50%,
+            70%,
+            90% {
+                transform: translateX(-5px);
+            }
+
+            20%,
+            40%,
+            60%,
+            80% {
+                transform: translateX(5px);
+            }
+        }
+
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both;
+            border-color: #e74c3c !important;
+        }
+
+        .error-msg {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 5px;
+            display: none;
+            font-weight: 600;
+        }
+
+        .attempts-counter {
+            background: #fff5f5;
+            color: #c53030;
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            margin-bottom: 15px;
+            display: none;
+            border: 1px solid #feb2b2;
+            font-weight: bold;
+        }
+
+        .reset-link-warning {
+            display: none;
+            color: #c53030;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            font-weight: bold;
+            line-height: 1.4;
+        }
+
+        input.error {
+            border-color: #e74c3c !important;
+            background-color: #fffcfc;
+        }
     </style>
 </head>
 
@@ -292,10 +355,12 @@
         </div>
 
         <!-- Admin Login Form -->
+        <div id="admin-attempts" class="attempts-counter"></div>
         <form id="admin-login-form" onsubmit="handleLogin(event, 'admin')">
             <div class="form-group">
                 <label for="admin-email">Emel / ID Pengguna</label>
                 <input type="text" id="admin-email" placeholder="Masukkan Emel Rasmi (admin@jkr.gov.my)" required>
+                <div id="admin-email-error" class="error-msg">Emel tidak dijumpai dalam pangkalan data.</div>
             </div>
             <div class="form-group">
                 <label for="admin-password">Kata Laluan</label>
@@ -304,15 +369,22 @@
                     <i class="fas fa-eye toggle-password"
                         onclick="togglePasswordVisibility('admin-password', this)"></i>
                 </div>
+                <div id="admin-password-error" class="error-msg">Kata laluan salah.</div>
             </div>
             <button type="submit" class="login-btn">Log Masuk Admin</button>
+            <div id="admin-reset-warning" class="reset-link-warning">
+                Terlalu banyak percubaan gagal. <br>
+                <a href="lupa-katalaluan.html" style="text-decoration: underline;">Sila Reset Kata Laluan</a>
+            </div>
         </form>
 
         <!-- Contractor Login Form -->
+        <div id="contractor-attempts" class="attempts-counter"></div>
         <form id="contractor-login-form" class="hidden" onsubmit="handleLogin(event, 'contractor')">
             <div class="form-group">
                 <label for="contractor-id">Emel Syarikat</label>
                 <input type="email" id="contractor-id" placeholder="Masukkan Emel Syarikat Berdaftar" required>
+                <div id="contractor-email-error" class="error-msg">Emel syarikat tidak dijumpai.</div>
             </div>
             <div class="form-group">
                 <label for="contractor-password">Kata Laluan</label>
@@ -321,8 +393,13 @@
                     <i class="fas fa-eye toggle-password"
                         onclick="togglePasswordVisibility('contractor-password', this)"></i>
                 </div>
+                <div id="contractor-password-error" class="error-msg">Kata laluan salah.</div>
             </div>
             <button type="submit" class="login-btn" style="background-color: #28a745;">Log Masuk Syarikat</button>
+            <div id="contractor-reset-warning" class="reset-link-warning">
+                Terlalu banyak percubaan gagal. <br>
+                <a href="lupa-katalaluan.html" style="text-decoration: underline;">Sila Reset Kata Laluan</a>
+            </div>
         </form>
 
         <div class="footer-links">
@@ -375,17 +452,35 @@
             }
         }
 
+        let loginAttempts = {
+            admin: 3,
+            contractor: 3
+        };
+
         function handleLogin(event, type) {
             event.preventDefault();
 
-            const btn = event.target.querySelector('button');
+            const form = event.target;
+            const btn = form.querySelector('button');
             const originalText = btn.textContent;
-            const inputs = event.target.querySelectorAll('input');
+            const emailInputEl = form.querySelector('input[type="text"], input[type="email"]');
+            const passwordInputEl = form.querySelector('input[type="password"]');
 
-            const emailInput = inputs[0].value.trim();
-            const passwordInput = inputs[1].value.trim();
+            const emailValue = emailInputEl.value.trim();
+            const passwordValue = passwordInputEl.value.trim();
 
-            if (!emailInput || !passwordInput) {
+            const emailError = document.getElementById(`${type}-email-error`);
+            const passwordError = document.getElementById(`${type}-password-error`);
+            const attemptsEl = document.getElementById(`${type}-attempts`);
+            const resetWarning = document.getElementById(`${type}-reset-warning`);
+
+            // Reset UI
+            emailError.style.display = 'none';
+            passwordError.style.display = 'none';
+            emailInputEl.classList.remove('shake', 'error');
+            passwordInputEl.classList.remove('shake', 'error');
+
+            if (!emailValue || !passwordValue) {
                 alert("Sila isi semua maklumat.");
                 return;
             }
@@ -393,63 +488,86 @@
             btn.textContent = "Memproses...";
             btn.disabled = true;
 
-            // Artificial delay for feel
-            setTimeout(() => {
-                // Use API for Login Verification
-                API.getAll().then(data => {
-                    if (type === 'admin') {
-                        // Temporary / Master Admin Bypass
-                        if (emailInput === 'admin@jkr.gov.my' && passwordInput === 'admin123') {
-                            localStorage.setItem('userRole', 'admin');
-                            localStorage.setItem('userName', 'Super Admin');
-                            localStorage.setItem('userEmail', 'admin@jkr.gov.my');
-                            window.location.href = 'main.html';
-                            return;
+            setTimeout(async () => {
+                try {
+                    let data = await API.getAll(false);
+                    const users = type === 'admin' ? (data.admins || []) : (data.contractors || []);
+
+                    // 1. Prepare identities for matching
+                    const inputLower = emailValue.toLowerCase();
+                    const isMasterAdminEmail = (type === 'admin' && inputLower === 'admin@jkr.gov.my');
+
+                    // 2. Find User in Database (Email OR Username/ID)
+                    const userByEmail = users.find(u => {
+                        const storedEmail = (u.email || '').toLowerCase().trim();
+                        const storedUsername = (u.username || '').toLowerCase().trim();
+                        return storedEmail === inputLower || storedUsername === inputLower;
+                    });
+
+                    // 3. Logic: If email exists in DB OR is the master admin email
+                    if (isMasterAdminEmail || userByEmail) {
+
+                        let authenticatedUser = null;
+
+                        // Verify Password for Master Admin
+                        if (isMasterAdminEmail && passwordValue === 'admin123') {
+                            authenticatedUser = { name: 'Super Admin', email: 'admin@jkr.gov.my' };
+                        }
+                        // Verify Password for DB User
+                        else if (userByEmail && userByEmail.password === passwordValue) {
+                            authenticatedUser = userByEmail;
                         }
 
-                        const admins = data.admins || [];
-                        const foundAdmin = admins.find(a =>
-                            (a.email && a.email.toLowerCase() === emailInput.toLowerCase()) &&
-                            a.password === passwordInput
-                        );
-
-                        if (foundAdmin) {
-                            localStorage.setItem('userRole', 'admin');
-                            localStorage.setItem('userName', foundAdmin.name);
-                            localStorage.setItem('userEmail', foundAdmin.email);
-                            window.location.href = 'main.html';
+                        if (authenticatedUser) {
+                            successLogin(type, authenticatedUser);
                         } else {
-                            alert("Ralat: Emel atau Kata Laluan Admin tidak sah.");
-                            btn.textContent = originalText;
-                            btn.disabled = false;
+                            // EMAIL BETUL, TAPI PASSWORD SALAH
+                            loginAttempts[type]--;
+                            passwordError.style.display = 'block';
+                            passwordInputEl.classList.add('shake', 'error');
+
+                            if (loginAttempts[type] <= 0) {
+                                attemptsEl.style.display = 'none';
+                                resetWarning.style.display = 'block';
+                                passwordInputEl.disabled = true;
+                                emailInputEl.disabled = true;
+                                btn.style.display = 'none';
+                            } else {
+                                attemptsEl.textContent = `Percubaan baki: ${loginAttempts[type]} kali`;
+                                attemptsEl.style.display = 'block';
+                                btn.textContent = originalText;
+                                btn.disabled = false;
+                            }
                         }
                     } else {
-                        // Contractor Login
-                        const contractors = data.contractors || [];
-                        const foundContractor = contractors.find(c =>
-                            (c.email && c.email.toLowerCase() === emailInput.toLowerCase()) &&
-                            c.password === passwordInput
-                        );
-
-                        if (foundContractor) {
-                            localStorage.setItem('userRole', 'contractor');
-                            localStorage.setItem('userName', foundContractor.name);
-                            localStorage.setItem('contractorEmail', foundContractor.email);
-                            localStorage.setItem('contractorRegNo', foundContractor.regNo);
-                            window.location.href = 'kontraktor.html';
-                        } else {
-                            alert("Ralat: Akaun Syarikat tidak dijumpai atau Kata Laluan salah.");
-                            btn.textContent = originalText;
-                            btn.disabled = false;
-                        }
+                        // EMAIL/ID MEMANG TIADA
+                        emailError.style.display = 'block';
+                        emailInputEl.classList.add('shake', 'error');
+                        btn.textContent = originalText;
+                        btn.disabled = false;
                     }
-                }).catch(err => {
+                } catch (err) {
                     console.error("Login Error:", err);
                     alert("Ralat sambungan ke server. Sila cuba lagi.");
                     btn.textContent = originalText;
                     btn.disabled = false;
-                });
-            }, 800);
+                }
+            }, 600);
+        }
+
+        function successLogin(type, found) {
+            if (type === 'admin') {
+                localStorage.setItem('userRole', 'admin');
+                localStorage.setItem('userName', found.name);
+                localStorage.setItem('userEmail', found.email);
+                window.location.href = 'main.html';
+            } else {
+                localStorage.setItem('userRole', 'contractor');
+                localStorage.setItem('userName', found.name);
+                localStorage.setItem('contractorEmail', found.email || '');
+                localStorage.setItem('contractorRegNo', found.regNo || '');
+                window.location.href = 'kontraktor.html';
+            }
         }
     </script>
 

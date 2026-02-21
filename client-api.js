@@ -1,11 +1,23 @@
 // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-const API_URL = 'https://script.google.com/macros/s/AKfycbzjLI8-ZpCVdzIghX6F_A7sZyDlO4TbeH3hfTfl30wgnrEIjicHa5JFIMNRrCCGDrgx/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbznlCAJHeb1ZFB3Mo6UEXM1NW24ZVn6kPLN-ugB9gvpzf3uudIUshzPN__YpmLHNpqz/exec';
 
 // --- TOKEN KESELAMATAN (Mesti sama dengan di Google Apps Script) ---
 const AUTH_TOKEN = "https://github.com/Jkr-web/E-aduan-JKR";
 
 const API = {
-    async getAll() {
+    async getAll(useCache = false) {
+        // 1. Return cache if requested (for instant load)
+        if (useCache) {
+            const cached = localStorage.getItem('db_cache');
+            if (cached) {
+                try {
+                    return JSON.parse(cached);
+                } catch (e) {
+                    console.error("Cache Parse Error", e);
+                }
+            }
+        }
+
         try {
             // Google Apps Script requires redirect: 'follow'
             const res = await fetch(`${API_URL}?token=${AUTH_TOKEN}&_t=${new Date().getTime()}`, {
@@ -22,6 +34,10 @@ const API = {
             try {
                 const json = JSON.parse(text);
                 if (json.status === 'error') throw new Error(json.message);
+
+                // ✅ Save success to cache for "Fast Loading"
+                localStorage.setItem('db_cache', text);
+
                 return json;
             } catch (e) {
                 console.error("JSON Parse Error. Server returned:", text);
@@ -29,7 +45,10 @@ const API = {
             }
         } catch (e) {
             console.error("Connection Failed (Background Sync):", e);
-            // We return safe defaults instead of alerting the user on every refresh
+            // If offline, return cache if available
+            const cached = localStorage.getItem('db_cache');
+            if (cached) return JSON.parse(cached);
+
             return { complaints: [], contractors: [], admins: [], settings: {} };
         }
     },
@@ -60,7 +79,8 @@ const API = {
 
     async saveAll(fullData) {
         try {
-            const body = JSON.stringify(fullData);
+            // Include action in body for redundancy
+            const body = JSON.stringify({ action: 'save_all', ...fullData });
             const sizeInMB = (encodeURI(body).split(/%..|./).length - 1) / (1024 * 1024);
             console.log(`Sending data: ${sizeInMB.toFixed(2)} MB`);
 
@@ -68,7 +88,7 @@ const API = {
                 alert(`AMARAN: Saiz data sangat besar (${sizeInMB.toFixed(2)} MB). Sila kurangkan jumlah imej.`);
             }
 
-            const res = await fetch(`${API_URL}?token=${AUTH_TOKEN}`, {
+            const res = await fetch(`${API_URL}?token=${AUTH_TOKEN}&action=save_all`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
                 redirect: 'follow',
@@ -102,12 +122,12 @@ const API = {
      */
     async updateSettings(settings) {
         try {
-            const res = await fetch(`${API_URL}?token=${AUTH_TOKEN}&action=updateSettings`, {
+            const res = await fetch(`${API_URL}?token=${AUTH_TOKEN}&action=update_settings`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'text/plain' },
                 redirect: 'follow',
                 mode: 'cors',
-                body: JSON.stringify({ settings: settings })
+                body: JSON.stringify({ action: 'update_settings', settings: settings })
             });
 
             const result = await res.json();
@@ -270,7 +290,7 @@ const API = {
                 headers: { 'Content-Type': 'text/plain' },
                 redirect: 'follow',
                 mode: 'cors',
-                body: JSON.stringify(data)
+                body: JSON.stringify({ action: 'append_record', sheet: sheet, ...data })
             });
 
             const text = await res.text();
@@ -399,13 +419,13 @@ const REVERSE_MAP = {
     'verifiedDate': 'verifiedDate',
     'assignedBy': 'assignedBy',
     'progress': 'progress',
-    'regNo': 'No. Daftar',
-    'startDate': 'Tarikh Mula',
-    'endDate': 'Tarikh Tamat',
-    'offphone': 'No. Tel Pejabat',
-    'mobile': 'No. Tel Bimbit',
-    'scope': 'Bidang',
-    'createdBy': 'Dijana Oleh'
+    'regNo': 'no. daftar',
+    'startDate': 'tarikh mula',
+    'endDate': 'tarikh tamat',
+    'offphone': 'no. tel pejabat',
+    'mobile': 'no. tel bimbit',
+    'scope': 'bidang',
+    'createdBy': 'dijana oleh'
 };
 
 /**

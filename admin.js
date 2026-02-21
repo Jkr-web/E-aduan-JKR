@@ -18,39 +18,100 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }, 3000);
 
-    // 1. INITIALIZE SETTINGS (FONT SIZE)
+    // 1. INITIALIZE SETTINGS (FONT SIZE & SOUND)
     const savedFontSize = localStorage.getItem('setting-font-size') || '14';
     document.documentElement.style.setProperty('--base-font-size', savedFontSize + 'px');
 
-    // Update Slider in UI if it exists
-    const fontSizeSlider = document.getElementById('setting-font-size');
-    const fontSizeValDisplay = document.getElementById('font-size-value');
-    if (fontSizeSlider) {
-        fontSizeSlider.value = savedFontSize;
-        if (fontSizeValDisplay) fontSizeValDisplay.textContent = savedFontSize + 'px';
+    // Notification Sound Settings
+    window.notifSettings = {
+        sound: localStorage.getItem('notif-sound') || 'chime',
+        volume: parseInt(localStorage.getItem('notif-volume') || '70'),
+        isMuted: localStorage.getItem('notif-muted') === 'true'
+    };
 
-        // Live change listener
-        fontSizeSlider.addEventListener('input', function () {
-            const val = this.value;
-            if (fontSizeValDisplay) fontSizeValDisplay.textContent = val + 'px';
-            document.documentElement.style.setProperty('--base-font-size', val + 'px');
+    // Update UI elements for settings
+    const soundSelect = document.getElementById('setting-notif-sound');
+    const volumeSlider = document.getElementById('setting-notif-volume');
+    const volumeDisplay = document.getElementById('volume-value');
+    const muteBtn = document.getElementById('btn-mute-toggle');
+    const muteIcon = document.getElementById('mute-icon');
+
+    if (soundSelect) soundSelect.value = window.notifSettings.sound;
+    if (volumeSlider) {
+        volumeSlider.value = window.notifSettings.volume;
+        if (volumeDisplay) volumeDisplay.textContent = window.notifSettings.volume + '%';
+    }
+
+    function updateMuteUI() {
+        if (muteIcon) {
+            muteIcon.className = window.notifSettings.isMuted ? 'fas fa-volume-mute' : 'fas fa-volume-up';
+            muteIcon.style.color = window.notifSettings.isMuted ? '#e74c3c' : '#2c3e50';
+        }
+        if (muteBtn) muteBtn.style.background = window.notifSettings.isMuted ? '#fdecea' : '#eee';
+    }
+    updateMuteUI();
+
+    // Mute Toggle Listener
+    if (muteBtn) {
+        muteBtn.addEventListener('click', () => {
+            window.notifSettings.isMuted = !window.notifSettings.isMuted;
+            localStorage.setItem('notif-muted', window.notifSettings.isMuted);
+            updateMuteUI();
+
+            // Play a small click or preview if unmuted
+            if (!window.notifSettings.isMuted) playNotificationSound(true);
         });
     }
 
-    // Handle Settings Form Submission
-    const settingsForm = document.getElementById('settings-form');
-    if (settingsForm) {
-        settingsForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const newSize = document.getElementById('setting-font-size').value;
-            const systemName = document.getElementById('setting-system-name').value;
+    // Volume Slider Listener
+    if (volumeSlider) {
+        volumeSlider.addEventListener('input', function () {
+            window.notifSettings.volume = this.value;
+            if (volumeDisplay) volumeDisplay.textContent = this.value + '%';
+            localStorage.setItem('notif-volume', this.value);
 
-            localStorage.setItem('setting-font-size', newSize);
-            // You could also save system name here if needed
-
-            alert("Tetapan berjaya disimpan.");
+            if (this.value > 0 && window.notifSettings.isMuted) {
+                window.notifSettings.isMuted = false;
+                localStorage.setItem('notif-muted', 'false');
+                updateMuteUI();
+            }
         });
     }
+
+    // Sound Preview
+    const previewBtn = document.getElementById('btn-preview-sound');
+    if (previewBtn) {
+        previewBtn.addEventListener('click', () => playNotificationSound(true));
+    }
+
+    if (soundSelect) {
+        soundSelect.addEventListener('change', () => {
+            window.notifSettings.sound = soundSelect.value;
+            localStorage.setItem('notif-sound', soundSelect.value);
+            playNotificationSound(true);
+        });
+    }
+
+    // --- Sound Helper Function ---
+    window.playNotificationSound = function (force = false) {
+        if (!force && window.notifSettings.isMuted) return;
+        if (window.notifSettings.sound === 'none') return;
+
+        const sounds = {
+            'chime': 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3',
+            'bell': 'https://assets.mixkit.co/active_storage/sfx/2273/2273-preview.mp3',
+            'ding': 'https://assets.mixkit.co/active_storage/sfx/2215/2215-preview.mp3',
+            'alert': 'https://assets.mixkit.co/active_storage/sfx/1000/1000-preview.mp3',
+            'soft': 'https://assets.mixkit.co/active_storage/sfx/2354/2354-preview.mp3'
+        };
+
+        const audioUrl = sounds[window.notifSettings.sound];
+        if (!audioUrl) return;
+
+        const audio = new Audio(audioUrl);
+        audio.volume = window.notifSettings.volume / 100;
+        audio.play().catch(e => console.warn("Audio play blocked by browser. Interaction required."));
+    };
 
     // Check Authentication
     const userRole = localStorage.getItem('userRole');
@@ -184,11 +245,18 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Close Sidebar when clicking outside (overlay)
-    overlay.addEventListener('click', () => {
+    // Close Sidebar when clicking outside (overlay) or close button
+    const closeSidebar = () => {
         sidebar.classList.remove('active');
         overlay.classList.remove('active');
-    });
+    };
+
+    overlay.addEventListener('click', closeSidebar);
+
+    const mobileCloseBtn = document.querySelector('.mobile-close-btn');
+    if (mobileCloseBtn) {
+        mobileCloseBtn.addEventListener('click', closeSidebar);
+    }
 
     // Navigation and Link Activation
     // Navigation and Link Activation
@@ -356,8 +424,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     ${c['tarikh siap'] || c.dateCompleted ? formatDisplayDate(c['tarikh siap'] || c.dateCompleted) : '-'}
                 </td>
                 <td data-label="Tempoh" style="padding: 12px 10px; font-weight: 600; color: #34495e;">${c['tempoh siap'] || c.duration || '-'}</td>
+                <td data-label="Rating" style="padding: 12px 10px;">${renderStars(c.rating, c.feedback)}</td>
             `;
                 tableBody.appendChild(trData);
+                // ... (helper function definition below outside the loop if preferred, or at the end of the script)
 
                 // 2. ACTION ROW (Below data row)
                 const trAction = document.createElement('tr');
@@ -409,18 +479,35 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initial Render
     // Centralized Data Refresh
-    window.refreshAllData = async function () {
+    window.refreshAllData = async function (useCacheOnly = false) {
         try {
-            console.log("Refreshing all data...");
-            // If overlay is hidden, we might want to show it for manual refresh too
-            // But usually refreshAllData is called by showLoadingWithProgress initially
-            const data = await API.getAll();
+            console.log(useCacheOnly ? "Loading from cache..." : "Refreshing from server (Silent)...");
+            const data = await API.getAll(useCacheOnly);
+
+            if (!data) return;
+
+            // --- Detect New Complaints for Notification Sound ---
+            const oldIds = (window.allComplaints || []).map(c => (c.id || c['no. aduan'] || "").toString());
+            const newComplaints = data.complaints || [];
+
+            // Only play sound if this is NOT a cache-only load AND we already had some data
+            if (!useCacheOnly && oldIds.length > 0) {
+                const trulyNew = newComplaints.filter(c => {
+                    const cid = (c.id || c['no. aduan'] || "").toString();
+                    return cid && !oldIds.includes(cid);
+                });
+
+                if (trulyNew.length > 0) {
+                    console.log(`Detected ${trulyNew.length} new complaints! Playing sound.`);
+                    playNotificationSound();
+                }
+            }
 
             // Update Global Cache
-            window.allComplaints = data.complaints || [];
+            window.allComplaints = newComplaints;
             window.allContractors = data.contractors || [];
             window.allAdmins = data.admins || [];
-            window.allSettings = data.settings || {}; // Sync settings too
+            window.allSettings = data.settings || {};
 
             // ✅ Sync to localStorage for Fast Branding upon next load
             if (data.settings) {
@@ -430,23 +517,24 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.settings.fontSize) localStorage.setItem('setting-font-size', data.settings.fontSize);
             }
 
-            // Render all components with pre-fetched data
+            // Render components (Silent Update)
             renderDashboardStats();
             renderNotifications();
             renderComplaintTable(window.allComplaints);
 
-            // Also render other lists if they are active
-            // renderContractorList(); // Optional, only if tab active
-
         } catch (e) {
             console.error("Refresh Error:", e);
-            // Fallback to local rendering if API fails, just to show something?
-            // renderComplaintTable(); 
         }
     };
 
-    // Initial Render
-    showLoadingWithProgress(refreshAllData());
+    // --- Fast Loading Strategy ---
+    (async function initApp() {
+        // 1. Instant Load from Cache
+        await refreshAllData(true);
+
+        // 2. Background Sync from Server (Silent / Background)
+        refreshAllData(false);
+    })();
 
     // Expose functions globally for onclick events
     window.openContractorModal = async function () {
@@ -576,13 +664,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 // Sync with main edit form in case notes were updated
                 const mainNotes = document.getElementById('edit-notes');
                 if (mainNotes) {
-                    complaints[index].adminNotes = mainNotes.value;
+                    complaints[index]['catatan admin'] = mainNotes.value;
                 }
 
-                complaints[index].contractor = contractor;
-                complaints[index].taskDescription = taskDesc;
-                complaints[index].contractorRefNo = contractorRefNo; // ✅ SAVE CONTRACTOR REF NO
-                complaints[index].status = 'Tindakan Kontraktor'; // Update Status
+                complaints[index]['kontraktor dilantik'] = contractor;
+                complaints[index]['keterangan tugasan'] = taskDesc;
+                complaints[index].contractorRefNo = contractorRefNo;
+                complaints[index].status = 'Tindakan Kontraktor';
 
                 // Record Assignment Date & Time
                 const now = new Date();
@@ -590,30 +678,32 @@ document.addEventListener('DOMContentLoaded', () => {
                 const t = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
                 const assignedTimestamp = `${d} ${t}`;
 
-                complaints[index].assignedDate = assignedTimestamp;
-                complaints[index]['tarikh lantikan'] = assignedTimestamp; // Map to GS Header
+                complaints[index]['tarikh lantikan'] = assignedTimestamp;
 
                 // Save back to API (Using updateRecord for efficiency)
-                await API.updateRecord('Aduan', 'id', id, complaints[index]);
-                console.log(`Complaint ${id} assigned to ${contractor} by ${complaints[index].assignedBy.name}`);
+                // Use 'no. aduan' as the primary key since it matches GS header
+                await API.updateRecord('Aduan', 'no. aduan', id, complaints[index]);
+                console.log(`Complaint ${id} assigned to ${contractor}`);
 
                 // Send Notifications
                 // 1. To Contractor
+                const contractorEmail = (window.allContractors || []).find(c => c.name === contractor)?.email || '';
                 await API.sendNotification('assigned', {
                     complaintId: id,
                     contractorName: contractor,
-                    location: complaints[index].location,
-                    description: complaints[index].description,
+                    contractorEmail: contractorEmail,
+                    location: complaints[index]['lokasi kerosakan'] || complaints[index].location,
+                    description: complaints[index]['keterangan aduan'] || complaints[index].description,
                     taskDescription: taskDesc
                 });
 
                 // 2. To User (Pengadu)
                 await API.sendNotification('status_update', {
                     complaintId: id,
-                    userName: complaints[index].name,
-                    userEmail: complaints[index].email,
-                    newStatus: 'Tindakan Kontraktor',
-                    updateBy: 'Admin'
+                    userName: complaints[index]['nama'] || complaints[index].name,
+                    userEmail: complaints[index]['emel'] || complaints[index].email,
+                    newStatus: 'Tindakan Kontraktor (Syarikat Dilantik)',
+                    updateBy: 'Admin JKR'
                 });
 
                 // Close Modals
@@ -957,7 +1047,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 li.style.cssText = `background: #fff; margin-bottom: 15px; border-left: 5px solid ${isMe ? '#3498db' : '#27ae60'}; display: flex; flex-direction: column; box-shadow: 0 4px 6px rgba(0,0,0,0.05); border-radius: 8px; overflow: hidden; position: relative;`;
 
                 li.innerHTML = `
-                <div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center;">
+                <div style="padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 15px;">
                     <div>
                         <div style="display: flex; align-items: center; gap: 8px;">
                             <strong style="color: #2c3e50; font-size: 1.1rem;">${a.name}</strong>
@@ -1034,16 +1124,29 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                contractors.push({
+                const newContractor = {
                     name, username, email, offphone: fOffPhone, mobile: fMobile, role: 'contractor', regNo, scope, startDate, endDate, password, createdBy
-                });
+                };
 
-                data.contractors = contractors;
-                await API.saveAll(data);
+                const success = await API.appendRecord('Kontraktor', newContractor);
 
-                alert(`Pendaftaran Syarikat Berjaya!\nSyarikat: ${name} `);
-                closeRegisterContractorModal();
-                renderContractorList();
+                if (success) {
+                    // Use Success Animation Modal instead of alert
+                    showSuccessModal(
+                        "Pendaftaran Berjaya!",
+                        `Syarikat <strong>${name}</strong> telah berjaya direkodkan.<br><br><span style="color:#e67e22; font-weight:700;"><i class="fas fa-sync fa-spin"></i> Sila tunggu beberapa saat untuk ianya selesai kemaskini dalam page senarai syarikat.</span>`
+                    );
+
+                    closeRegisterContractorModal();
+
+                    // Delay render to allow server sync
+                    setTimeout(() => {
+                        renderContractorList();
+                    }, 500);
+
+                } else {
+                    throw new Error("Gagal menyimpan data ke Google Sheets");
+                }
 
             } catch (err) {
                 console.error("Contractor Registration Error:", err);
@@ -1092,14 +1195,26 @@ document.addEventListener('DOMContentLoaded', () => {
                     return;
                 }
 
-                admins.push({ name, username, email, position, offphone: fOffPhone, mobile: fMobile, role: 'admin', password });
+                const newAdmin = { name, username, email, position, offphone: fOffPhone, mobile: fMobile, role: 'admin', password, createdBy: localStorage.getItem('userName') || 'Admin' };
 
-                data.admins = admins;
-                await API.saveAll(data);
+                const success = await API.appendRecord('Admin', newAdmin);
 
-                alert(`Pendaftaran Admin berjaya!\nID: ${email} `);
-                closeRegisterAdminModal();
-                renderAdminList();
+                if (success) {
+                    // Use Success Animation Modal instead of alert
+                    showSuccessModal(
+                        "Admin Berjaya Didaftar!",
+                        `Akaun admin untuk <strong>${name}</strong> telah berjaya direkodkan.<br><br><span style="color:#27ae60; font-weight:700;"><i class="fas fa-sync fa-spin"></i> Sila tunggu beberapa saat untuk ianya selesai kemaskini dalam page senarai admin.</span>`
+                    );
+
+                    closeRegisterAdminModal();
+
+                    // Delay render to allow server sync
+                    setTimeout(() => {
+                        renderAdminList();
+                    }, 500);
+                } else {
+                    throw new Error("Gagal menyimpan data ke Google Sheets");
+                }
 
             } catch (err) {
                 console.error("Admin Registration Error:", err);
@@ -1197,9 +1312,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.contractors = contractors;
                     await API.saveAll(data);
 
-                    alert("Maklumat syarikat telah dikemaskini.");
+                    // Use Success Animation Modal
+                    showSuccessModal(
+                        "Kemaskini Berjaya!",
+                        `Maklumat syarikat <strong>${contractors[index]?.name || ''}</strong> telah berjaya dikemaskini.<br><br><span style="color:#3498db; font-weight:700;"><i class="fas fa-sync fa-spin"></i> Data sedang diselaraskan...</span>`
+                    );
+
                     closeEditContractorModal();
-                    renderContractorList();
+
+                    setTimeout(() => {
+                        renderContractorList();
+                    }, 500);
                 }
             } catch (err) {
                 console.error("Save Contractor Error:", err);
@@ -1252,9 +1375,17 @@ document.addEventListener('DOMContentLoaded', () => {
                     data.admins = admins;
                     await API.saveAll(data);
 
-                    alert("Maklumat admin telah dikemaskini.");
+                    // Use Success Animation Modal
+                    showSuccessModal(
+                        "Kemaskini Berjaya!",
+                        `Maklumat admin <strong>${admins[index]?.name || ''}</strong> telah dikemaskini sepenuhnya.<br><br><span style="color:#2ecc71; font-weight:700;"><i class="fas fa-sync fa-spin"></i> Menyegarkan senarai...</span>`
+                    );
+
                     closeEditAdminModal();
-                    renderAdminList();
+
+                    setTimeout(() => {
+                        renderAdminList();
+                    }, 500);
                 }
             } catch (err) {
                 console.error("Save Admin Error:", err);
@@ -1382,12 +1513,28 @@ function renderDashboardStats() {
     const elProcess = document.getElementById('total-process');
     const elLate = document.getElementById('total-late');
     const elRejected = document.getElementById('total-rejected');
+    const elAvgRating = document.getElementById('average-rating');
+    const elAvgStars = document.getElementById('average-stars');
 
     if (elTotal) elTotal.textContent = total;
     if (elCompleted) elCompleted.textContent = completed;
     if (elProcess) elProcess.textContent = inProcess;
     if (elLate) elLate.textContent = late;
     if (elRejected) elRejected.textContent = rejected;
+
+    // Calculate Average Rating
+    const ratedComplaints = complaints.filter(c => c.rating && parseInt(c.rating) > 0);
+    if (elAvgRating) {
+        if (ratedComplaints.length > 0) {
+            const sum = ratedComplaints.reduce((acc, c) => acc + parseInt(c.rating), 0);
+            const avg = (sum / ratedComplaints.length).toFixed(1);
+            elAvgRating.textContent = avg;
+            if (elAvgStars) elAvgStars.innerHTML = renderStars(Math.round(avg), '', true);
+        } else {
+            elAvgRating.textContent = "0.0";
+            if (elAvgStars) elAvgStars.textContent = "Tiada penilaian";
+        }
+    }
 }
 
 // Notification System
@@ -1855,13 +2002,20 @@ window.verifyTask = async function (id) {
 
         alert("Tugasan telah berjaya disahkan.");
 
-        // 3. Refresh UI
-        // We use a small trick: renderComplaintTable will usually fetch from API.
-        // To avoid race conditions, we can wait a bit or just call render with cache if we had that option.
-        // For now, let's just refresh the table and progress view.
-        renderComplaintTable(window.allComplaints);
+        // 4. Notify User/Stakeholder (Task Verified)
+        const baseUrl = window.location.origin + window.location.pathname.replace('main.html', '');
+        const ratingUrl = `${baseUrl}Rating.html?id=${id}`;
 
-        // Re-open progress to show the "TELAH DISAHKAN" state
+        await API.sendNotification('task_verified', {
+            complaintId: id,
+            userName: currentComplaint['nama'] || currentComplaint.name,
+            userEmail: currentComplaint['emel'] || currentComplaint.email,
+            verifiedDate: new Date(verifiedDate).toLocaleString('ms-MY'),
+            ratingUrl: ratingUrl
+        });
+
+        // 5. Refresh UI
+        renderComplaintTable(window.allComplaints);
         viewProgress(id);
 
     } catch (err) {
@@ -2265,23 +2419,74 @@ window.renderReportTable = async function () {
             if (c.status === 'Dalam Proses' || c.status === 'Sedang Dibaiki Oleh Kontraktor') statusColor = '#3498db'; // Blue
 
             tr.innerHTML = `
-                <td style="padding: 10px;">${c.id}</td>
-                <td style="padding: 10px;">${c.date || '-'}</td>
-                <td style="padding: 10px;">${c.name || '-'}</td>
-                <td style="padding: 10px;">${c.location || '-'}</td>
-                <td style="padding: 10px;">${c.description || '-'}</td>
-                <td style="padding: 10px;"><span style="background:${statusColor}; color:white; padding: 3px 8px; border-radius: 4px; font-size: 11px;">${c.status}</span></td>
-                <td style="padding: 10px;">${c.contractor || '-'}</td>
-                <td style="padding: 10px;">${c.duration || '-'}</td>
+                <td data-label="ID Aduan" style="padding: 10px; white-space: nowrap;">${c['no. aduan'] || c.id || '-'}</td>
+                <td data-label="Tarikh" style="padding: 10px; white-space: nowrap;">${c['tarikh aduan'] || c.date || '-'}</td>
+                <td data-label="Pengadu" style="padding: 10px;">${c.name || '-'}</td>
+                <td data-label="Lokasi" style="padding: 10px; max-width: 150px; word-wrap: break-word;">${c.location || '-'}</td>
+                <td data-label="Kerosakan" style="padding: 10px; max-width: 250px; word-wrap: break-word;">${c.description || '-'}</td>
+                <td data-label="Status" style="padding: 10px;"><span style="background:${statusColor}; color:white; padding: 3px 8px; border-radius: 4px; font-size: 11px; white-space: nowrap;">${c.status}</span></td>
+                <td data-label="Kontraktor" style="padding: 10px;">${c.contractor || '-'}</td>
+                <td data-label="Tempoh" style="padding: 10px; white-space: nowrap;">${c.duration || '-'}</td>
+                <td data-label="Rating" style="padding: 10px;">${renderStars(c.rating, c.feedback, true)}</td>
             `;
             tbody.appendChild(tr);
         });
+
+        // ✅ Render Feedback Grid below table
+        renderFeedbackGrid(complaints);
 
     } catch (e) {
         console.error("Report Render Error:", e);
         tbody.innerHTML = '<tr><td colspan="8" style="text-align:center; color:red;">Ralat memuatkan data report.</td></tr>';
     }
 };
+
+/**
+ * Render Grid of Feedback Cards
+ * @param {Array} complaints 
+ */
+function renderFeedbackGrid(complaints) {
+    const grid = document.getElementById('feedback-grid');
+    if (!grid) return;
+
+    // Filter only those with ratings
+    const feedbacks = complaints.filter(c => c.rating && parseInt(c.rating) > 0);
+
+    if (feedbacks.length === 0) {
+        grid.innerHTML = '<div style="grid-column: 1/-1; padding: 30px; text-align: center; background: #f8fafc; border-radius: 12px; color: #64748b; border: 2px dashed #e2e8f0;">Tiada maklum balas daripada pengguna setakat ini.</div>';
+        return;
+    }
+
+    grid.innerHTML = feedbacks.map((f, index) => {
+        const delay = index * 0.1; // Staggered delay
+        return `
+            <div class="feedback-card" style="background: white; border-radius: 16px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid #f1f5f9; transition: transform 0.3s, box-shadow 0.3s, border-color 0.3s; position: relative; overflow: hidden; animation-delay: ${delay}s;">
+                <div style="position: absolute; top: 0; left: 0; width: 4px; height: 100%; background: #f1c40f;"></div>
+                <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 15px;">
+                    <div>
+                        <div style="font-weight: 800; color: #1e293b; font-size: 1rem;">${f.name || 'Pengguna'}</div>
+                        <div style="font-size: 0.75rem; color: #64748b;">${f['no. aduan'] || f.id}</div>
+                    </div>
+                    <div style="background: #fff9db; color: #f08c00; padding: 4px 8px; border-radius: 8px; font-size: 0.7rem; font-weight: 800;">
+                        ${f.status}
+                    </div>
+                </div>
+                
+                <div style="margin-bottom: 12px;">
+                    ${renderStars(f.rating, '', true)}
+                </div>
+
+                <div style="font-style: italic; color: #475569; font-size: 0.9rem; line-height: 1.5; background: #f8fafc; padding: 12px; border-radius: 12px;">
+                    "${f.feedback || 'Tiada ulasan bertulis.'}"
+                </div>
+
+                <div style="margin-top: 15px; font-size: 0.7rem; color: #94a3b8; text-align: right;">
+                    <i class="far fa-calendar-alt"></i> ${f['tarikh aduan'] || f.date || ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
 
 window.downloadReportPDF = function () {
     const btnPdf = document.getElementById('btn-download-pdf');
@@ -2438,7 +2643,7 @@ window.exportReportExcel = function () {
 
     // Define CSV Headers
     let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "ID Aduan,Tarikh,Nama Pengadu,Jabatan,No Telefon,Lokasi,Kerosakan,Status,Kontraktor,Tempoh Siap,Catatan Admin\r\n";
+    csvContent += "ID Aduan,Tarikh,Nama Pengadu,Jabatan,No Telefon,Lokasi,Kerosakan,Status,Kontraktor,Tempoh Siap,Rating,Komen/Feedback\r\n";
 
     complaints.forEach(c => {
         // Escape commas in fields
@@ -2448,8 +2653,8 @@ window.exportReportExcel = function () {
         };
 
         const row = [
-            c.id,
-            c.date,
+            c['no. aduan'] || c.id,
+            c['tarikh aduan'] || c.date,
             escape(c.name),
             escape(c.dept),
             escape(c.phone),
@@ -2458,7 +2663,8 @@ window.exportReportExcel = function () {
             escape(c.status),
             escape(c.contractor),
             escape(c.duration),
-            escape(c.adminNotes)
+            c.rating || "0",
+            escape(c.feedback || "")
         ];
         csvContent += row.join(",") + "\r\n";
     });
@@ -2711,4 +2917,45 @@ function showSuccessModal(title, message, refNo = '') {
 function closeSuccessModal() {
     const modal = document.getElementById('success-animate-modal');
     if (modal) modal.style.display = 'none';
+}
+
+/**
+ * Render Star Rating Icons
+ * @param {number} rating - 1 to 5
+ * @param {string} feedback - User comment
+ * @param {boolean} animate - Whether to apply pulse animation
+ */
+function renderStars(rating, feedback = '', animate = false) {
+    if (!rating || rating == 0) return '<span style="color:#ccc; font-style:italic; font-size:11px;">Belum dinilai</span>';
+
+    const r = parseInt(rating);
+    let stars = '';
+    const labels = {
+        1: 'Lemah',
+        2: 'Kurang Memuaskan',
+        3: 'Sederhana',
+        4: 'Baik',
+        5: 'Mantap'
+    };
+
+    for (let i = 1; i <= 5; i++) {
+        const color = i <= r ? '#f1c40f' : '#ccc';
+        const animatedClass = (animate && i <= r) ? 'star-animated' : '';
+        stars += `<i class="fas fa-star ${animatedClass}" style="color: ${color}; font-size: 14px; margin-right: 2px;"></i>`;
+    }
+
+    // If it's for summary (no feedback box)
+    if (animate && !feedback) {
+        return `<div style="display:flex; gap:2px; align-items:center; justify-content:center;">${stars}</div>`;
+    }
+
+    return `
+        <div style="display:flex; flex-direction:column; gap:4px; min-width:120px;">
+            <div style="display:flex; gap:2px; align-items:center;">
+                ${stars}
+                <span style="font-size:10px; font-weight:700; color:#2c3e50; margin-left:5px;">(${labels[r] || ''})</span>
+            </div>
+            ${feedback ? `<div style="font-size:10px; color:#636e72; font-style:italic; background:#fff; padding:4px 8px; border-radius:4px; border-left:3px solid #f1c40f; margin-top:5px; white-space:normal; line-height:1.3;">"${feedback}"</div>` : ''}
+        </div>
+    `;
 }

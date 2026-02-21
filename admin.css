@@ -691,12 +691,19 @@ button {
         left: 0;
         width: 100%;
         height: 100%;
-        background: rgba(0, 0, 0, 0.5);
+        background: rgba(0, 0, 0, 0.4);
         display: none;
+        z-index: 1999;
+        cursor: pointer;
+        backdrop-filter: blur(4px);
     }
 
     .overlay.active {
         display: block;
+    }
+
+    .mobile-close-btn {
+        display: block !important;
     }
 
     .sidebar-header h2,
@@ -825,4 +832,64 @@ button {
     100% {
         transform: scale(1);
     }
+}
+
+@keyframes starPulse {
+    0% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0px rgba(241, 196, 15, 0));
+    }
+
+    50% {
+        transform: scale(1.15);
+        filter: drop-shadow(0 0 5px rgba(241, 196, 15, 0.5));
+    }
+
+    100% {
+        transform: scale(1);
+        filter: drop-shadow(0 0 0px rgba(241, 196, 15, 0));
+    }
+}
+
+.star-animated {
+    display: inline-block;
+    animation: starPulse 2s infinite ease-in-out;
+}
+
+.star-animated:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.star-animated:nth-child(3) {
+    animation-delay: 0.4s;
+}
+
+.star-animated:nth-child(4) {
+    animation-delay: 0.6s;
+}
+
+.star-animated:nth-child(5) {
+    animation-delay: 0.8s;
+}
+
+@keyframes feedbackCardEntrance {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+.feedback-card {
+    animation: feedbackCardEntrance 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) backwards;
+}
+
+.feedback-card:hover {
+    transform: translateY(-8px) scale(1.02) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
+    border-color: #f1c40f !important;
 }

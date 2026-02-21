@@ -45,7 +45,12 @@
 
     <!-- Sidebar Navigation -->
     <nav class="sidebar">
-        <div class="sidebar-header" style="padding: 25px 20px; text-align: center;">
+        <div class="sidebar-header" style="padding: 25px 20px; text-align: center; position: relative;">
+            <!-- Mobile Close Button -->
+            <button class="mobile-close-btn"
+                style="position: absolute; top: 15px; right: 15px; background: none; border: none; color: white; font-size: 1.5rem; cursor: pointer; display: none;">
+                <i class="fas fa-times"></i>
+            </button>
             <h2 id="sidebar-system-name"
                 style="font-size: 1.1rem; margin: 0; color: white; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">
                 PORTAL ADUAN JKR</h2>
@@ -134,6 +139,12 @@
                     <div class="card">
                         <h3>Ditolak</h3>
                         <p id="total-rejected" style="color: #c0392b;">0</p>
+                    </div>
+                    <!-- Card 6: Purata Rating -->
+                    <div class="card" style="border-bottom: 4px solid #f1c40f;">
+                        <h3>Purata Rating</h3>
+                        <p id="average-rating" style="color: #f1c40f; font-weight: 800;">0.0</p>
+                        <div id="average-stars" style="font-size: 0.8rem; margin-top: -10px;"></div>
                     </div>
                 </div>
 
@@ -255,6 +266,8 @@
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh & Masa Terima</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tarikh & Masa Siap</th>
                                 <th style="padding: 10px; border-bottom: 2px solid #ddd;">Tempoh Siap</th>
+                                <th style="padding: 10px; border-bottom: 2px solid #ddd; background:#fffde7;">Rating
+                                </th>
                             </tr>
                         </thead>
                         <tbody id="senarai-pengadu-body">
@@ -290,14 +303,13 @@
 
                 <!-- Report Table Container -->
                 <div id="report-container" class="table-responsive"
-                    style="overflow-x: auto; background: white; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 8px;">
+                    style="background: white; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-radius: 8px;">
                     <div style="margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
                         <h3 style="margin: 0; color: #2c3e50;">Laporan Keseluruhan Aduan</h3>
                         <p style="margin: 5px 0; color: #7f8c8d; font-size: 0.9rem;">Dijana pada: <span
                                 id="report-date"></span></p>
                     </div>
-                    <table id="report-table"
-                        style="width: 100%; border-collapse: collapse; min-width: 800px; font-size: 13px;">
+                    <table id="report-table" style="width: 100%; border-collapse: collapse; font-size: 13px;">
                         <thead>
                             <tr style="background-color: #f8f9fa; text-align: left; border-bottom: 2px solid #ddd;">
                                 <th style="padding: 12px; color: #2c3e50;">ID Aduan</th>
@@ -308,12 +320,26 @@
                                 <th style="padding: 12px; color: #2c3e50;">Status</th>
                                 <th style="padding: 12px; color: #2c3e50;">Kontraktor</th>
                                 <th style="padding: 12px; color: #2c3e50;">Tempoh Siap</th>
+                                <th style="padding: 12px; color: #2c3e50;">Rating</th>
                             </tr>
                         </thead>
                         <tbody id="report-table-body">
                             <!-- Populated by JS -->
                         </tbody>
                     </table>
+                </div>
+
+                <!-- Feedback Grid (Kotak Rating) -->
+                <div id="feedback-section" style="margin-top: 40px;">
+                    <h3
+                        style="margin-bottom: 20px; color: #2c3e50; display: flex; align-items: center; gap: 12px; font-size: 1.3rem;">
+                        <i class="fas fa-star-half-alt" style="color: #f1c40f; font-size: 1.5rem;"></i>
+                        Suara Pengguna (Rating & Maklum Balas)
+                    </h3>
+                    <div id="feedback-grid"
+                        style="display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px;">
+                        <!-- JS injected cards -->
+                    </div>
                 </div>
             </section>
 
@@ -428,7 +454,10 @@
                                         style="flex: 1; cursor: pointer;">
                                     <span id="volume-value"
                                         style="font-weight: 700; color: #f39c12; min-width: 45px; background: #fef9e7; padding: 4px 10px; border-radius: 20px; text-align: center;">70%</span>
-                                    <i class="fas fa-volume-up" style="color: #7f8c8d;"></i>
+                                    <button type="button" id="btn-mute-toggle" title="Mute/Unmute"
+                                        style="background: #eee; border: none; padding: 8px; border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; width: 35px; height: 35px; transition: all 0.2s;">
+                                        <i id="mute-icon" class="fas fa-volume-up" style="color: #2c3e50;"></i>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -819,14 +848,9 @@
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Bidang
                         Teras</label>
-                    <select id="reg-company-scope"
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                        <option value="Penyelenggaraan Am">Penyelenggaraan Am</option>
-                        <option value="Penyelenggaraan Elektrik">Penyelenggaraan Elektrik</option>
-                        <option value="Penyelenggaraan Mekanikal">Penyelenggaraan Mekanikal</option>
-                        <option value="Penyelenggaraan ICT">Penyelenggaraan ICT</option>
-                        <option value="Penyelenggaraan Sivil">Penyelenggaraan Sivil</option>
-                    </select>
+                    <input type="text" id="reg-company-scope" placeholder="Contoh: Penyelenggaraan Am / Elektrik"
+                        required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
                 </div>
 
                 <div style="display: flex; gap: 15px; margin-bottom: 15px;">
@@ -995,14 +1019,9 @@
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Bidang
                         Teras</label>
-                    <select id="edit-company-scope"
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                        <option value="Penyelenggaraan Am">Penyelenggaraan Am</option>
-                        <option value="Penyelenggaraan Elektrik">Penyelenggaraan Elektrik</option>
-                        <option value="Penyelenggaraan Mekanikal">Penyelenggaraan Mekanikal</option>
-                        <option value="Penyelenggaraan ICT">Penyelenggaraan ICT</option>
-                        <option value="Penyelenggaraan Sivil">Penyelenggaraan Sivil</option>
-                    </select>
+                    <input type="text" id="edit-company-scope" placeholder="Contoh: Penyelenggaraan Am / Elektrik"
+                        required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
                 </div>
 
                 <div style="display: flex; gap: 15px; margin-bottom: 20px;">

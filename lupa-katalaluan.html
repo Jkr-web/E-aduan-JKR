@@ -432,33 +432,22 @@
 
             btn.disabled = true;
             btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mencari...';
-            resultBox.style.display = 'none';
+            resultBox.classList.remove('active');
 
             try {
-                const data = await API.getAll();
-                const admins = data.admins || [];
-                const contractors = data.contractors || [];
-
-                // Search in Admins
-                let found = admins.find(a =>
-                    (a.email && a.email.toLowerCase() === input) ||
-                    (a.username && a.username.toLowerCase() === input) ||
-                    (a.name && a.name.toLowerCase().includes(input))
-                );
+                // 1. Try Cache First for "Fast Load" feel
+                let data = await API.getAll(true);
+                let found = findUser(data, input);
 
                 if (!found) {
-                    // Search in Contractors
-                    found = contractors.find(c =>
-                        (c.email && c.email.toLowerCase() === input) ||
-                        (c.regNo && c.regNo.toLowerCase() === input)
-                    );
+                    // 2. If not in cache, try Server
+                    data = await API.getAll(false);
+                    found = findUser(data, input);
                 }
 
                 if (found) {
                     targetUser = found;
                     document.getElementById('res-name').textContent = found.name;
-                    document.getElementById('res-id').textContent = found.email || found.username || found.regNo;
-
                     document.getElementById('res-id').textContent = found.email || found.username || found.regNo;
 
                     resultBox.classList.add('active');
@@ -476,6 +465,25 @@
                 btn.innerHTML = '<i class="fas fa-search"></i> Cari Maklumat';
                 btn.disabled = false;
             }
+        }
+
+        function findUser(data, input) {
+            if (!data) return null;
+            const admins = data.admins || [];
+            const contractors = data.contractors || [];
+
+            let found = admins.find(a =>
+                (a.email && a.email.toLowerCase() === input) ||
+                (a.username && a.username.toLowerCase() === input)
+            );
+
+            if (!found) {
+                found = contractors.find(c =>
+                    (c.email && c.email.toLowerCase() === input) ||
+                    (c.regNo && c.regNo.toLowerCase() === input)
+                );
+            }
+            return found;
         }
 
         async function sendResetRequest() {

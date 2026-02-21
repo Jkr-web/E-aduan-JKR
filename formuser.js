@@ -120,10 +120,11 @@ window.renderComplaintForm = function (containerId) {
     // Inject HTML into container
     appContainer.innerHTML = formHTML;
 
-    // --- LIVE BRANDING SYNC ---
-    (async function syncBranding() {
+    // --- FAST BRANDING SYNC ---
+    async function syncBranding(useCacheOnly = false) {
         try {
-            const data = await API.getAll();
+            const data = await API.getAll(useCacheOnly);
+            if (!data) return;
             const settings = data.settings || {};
 
             // 1. Update Logo
@@ -158,8 +159,14 @@ window.renderComplaintForm = function (containerId) {
             if (settings.systemName) localStorage.setItem('systemName', settings.systemName);
 
         } catch (e) {
-            console.warn("Branding sync failed, using defaults or cache.", e);
+            console.warn("Branding sync failed.", e);
         }
+    }
+
+    // Run sync in two stages: immediate cache, then server update
+    (async () => {
+        await syncBranding(true);  // Cache
+        syncBranding(false);       // Server (Background)
     })();
 
     // --- JavaScript Logic starts here ---
@@ -325,9 +332,9 @@ window.renderComplaintForm = function (containerId) {
                     // Send Notification to Admins
                     await API.sendNotification('new_complaint', {
                         complaintId: newId,
-                        name: newComplaint.name,
-                        location: newComplaint.location,
-                        description: newComplaint.description
+                        name: newComplaint["nama"],
+                        location: newComplaint["lokasi kerosakan"],
+                        description: newComplaint["keterangan aduan"]
                     });
 
                     if (percentEl) percentEl.textContent = "100%";

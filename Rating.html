@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Rating Servis JKR</title>
+
+    <!-- FontAwesome for Stars -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #1e293b, #334155);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            width: 100%;
+            max-width: 450px;
+            text-align: center;
+            animation: slideUp 0.6s ease-out;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        h2 {
+            color: #1e293b;
+            margin-bottom: 10px;
+            font-size: 1.5rem;
+        }
+
+        p {
+            color: #64748b;
+            margin-bottom: 25px;
+        }
+
+        .stars {
+            font-size: 45px;
+            margin: 20px 0;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .stars i {
+            color: #e2e8f0;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .stars i.active,
+        .stars i:hover {
+            color: #f1c40f;
+            transform: scale(1.15);
+        }
+
+        .rating-label {
+            font-weight: 700;
+            color: #f1c40f;
+            min-height: 20px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid #e2e8f0;
+            resize: none;
+            margin-top: 15px;
+            font-size: 14px;
+            box-sizing: border-box;
+            background: #f8fafc;
+            transition: border 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #3b82f6;
+            background: #fff;
+        }
+
+        button {
+            margin-top: 25px;
+            padding: 14px 30px;
+            border: none;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            width: 100%;
+            box-shadow: 0 4px 10px rgba(37, 99, 235, 0.2);
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(37, 99, 235, 0.3);
+        }
+
+        button:disabled {
+            background: #cbd5e1;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .thankyou {
+            margin-top: 20px;
+            display: none;
+            animation: fadeIn 0.5s;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        .success-icon {
+            font-size: 60px;
+            color: #2ecc71;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="card" id="rating-card">
+        <div id="form-container">
+            <h2><i class="fas fa-tools"></i> Penilaian Servis</h2>
+            <p>Adakah anda berpuas hati dengan kerja pembaikan bagi aduan <strong><span
+                        id="display-id">-</span></strong>?</p>
+
+            <div class="stars" id="star-container">
+                <i class="fas fa-star" data-value="1"></i>
+                <i class="fas fa-star" data-value="2"></i>
+                <i class="fas fa-star" data-value="3"></i>
+                <i class="fas fa-star" data-value="4"></i>
+                <i class="fas fa-star" data-value="5"></i>
+            </div>
+
+            <div id="rating-text" class="rating-label"></div>
+
+            <textarea id="feedback" rows="4"
+                placeholder="Berikan komen atau cadangan penambahbaikan anda..."></textarea>
+
+            <button id="submit-btn" onclick="submitRating()">Hantar Maklum Balas</button>
+        </div>
+
+        <div class="thankyou" id="thankyou">
+            <div class="success-icon"><i class="fas fa-check-circle"></i></div>
+            <h2>Terima Kasih!</h2>
+            <p>Penilaian anda telah direkodkan. Maklum balas anda sangat membantu kami meningkatkan kualiti servis JKR.
+            </p>
+            <button onclick="window.close()">Tutup Halaman</button>
+        </div>
+    </div>
+
+    <script>
+        let selectedRating = 0;
+        const stars = document.querySelectorAll(".stars i");
+        const labels = {
+            1: 'Lemah',
+            2: 'Kurang Memuaskan',
+            3: 'Sederhana',
+            4: 'Baik',
+            5: 'Mantap'
+        };
+
+        // Get ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const complaintId = urlParams.get('id');
+
+        if (complaintId) {
+            document.getElementById('display-id').textContent = complaintId;
+        } else {
+            document.getElementById('form-container').innerHTML = `
+        <i class="fas fa-exclamation-triangle" style="font-size:50px; color:#e74c3c; margin-bottom:20px;"></i>
+        <h2>Pautan Tidak Sah</h2>
+        <p>Ralat: ID Aduan tidak dijumpai. Sila gunakan pautan dari emel notifikasi anda.</p>
+    `;
+        }
+
+        stars.forEach(star => {
+            star.addEventListener("click", function () {
+                selectedRating = parseInt(this.getAttribute("data-value"));
+                updateStars(selectedRating);
+                document.getElementById('rating-text').textContent = labels[selectedRating];
+            });
+
+            star.addEventListener("mouseover", function () {
+                updateStars(this.getAttribute("data-value"));
+            });
+
+            star.addEventListener("mouseout", function () {
+                updateStars(selectedRating);
+            });
+        });
+
+        function updateStars(val) {
+            stars.forEach((s, idx) => {
+                if (idx < val) s.classList.add('active');
+                else s.classList.remove('active');
+            });
+        }
+
+        async function submitRating() {
+            if (selectedRating == 0) {
+                alert("Sila pilih bintang rating terlebih dahulu.");
+                return;
+            }
+
+            const feedback = document.getElementById("feedback").value;
+            const btn = document.getElementById('submit-btn');
+
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menghantar...';
+
+            // URL Web App anda dari client-api.js
+            const api_url = "https://script.google.com/macros/s/AKfycbznch0vQYKCQWcRyry9egq83CsbyxGAy6GF8TA19qY0NldRi0cfN17cQKRr38ch1Se7/exec";
+            const token = "https://github.com/Jkr-web/E-aduan-JKR";
+
+            try {
+                // POST ke Google Script
+                // Kita hantar sebagai text/plain untuk mengelakkan isu CORS preflight
+                await fetch(`${api_url}?token=${token}&action=submit_rating&id=${complaintId}`, {
+                    method: 'POST',
+                    mode: 'no-cors', // Penting untuk GAS post
+                    body: JSON.stringify({
+                        rating: selectedRating,
+                        feedback: feedback
+                    })
+                });
+
+                // Kerana no-cors, kita tidak boleh baca response. Kita andaikan sukses.
+                document.getElementById('form-container').style.display = 'none';
+                document.getElementById('thankyou').style.display = 'block';
+            } catch (e) {
+                console.error(e);
+                alert("Gagal menghantar penilaian. Sila cuba lagi.");
+                btn.disabled = false;
+                btn.textContent = "Hantar Maklum Balas";
+            }
+        }
+    </script>
+
+</body>
+
+</html>

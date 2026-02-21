@@ -139,7 +139,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Default logged in from Login session
-    showLoadingWithProgress(loadContractorDashboard(userName));
+    initContractorApp();
+
+    // --- Sound Settings for Contractor ---
+    window.notifSettings = {
+        sound: 'chime', // Default for contractor
+        volume: 70,
+        isMuted: false
+    };
+
+    window.playNotificationSound = function (force = false) {
+        if (!force && window.notifSettings.isMuted) return;
+        const soundUrl = 'https://assets.mixkit.co/active_storage/sfx/2358/2358-preview.mp3'; // Chime
+        const audio = new Audio(soundUrl);
+        audio.volume = window.notifSettings.volume / 100;
+        audio.play().catch(e => console.warn("Audio play blocked"));
+    };
 
     // Sidebar navigation
 
@@ -202,11 +217,18 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    const closeSidebar = () => {
+        sidebar.classList.remove('active');
+        overlay.classList.remove('active');
+    };
+
     if (overlay) {
-        overlay.addEventListener('click', () => {
-            sidebar.classList.remove('active');
-            overlay.classList.remove('active');
-        });
+        overlay.addEventListener('click', closeSidebar);
+    }
+
+    const mobileCloseBtn = document.querySelector('.mobile-close-btn');
+    if (mobileCloseBtn) {
+        mobileCloseBtn.addEventListener('click', closeSidebar);
     }
 
     // Logout Functionality
@@ -319,49 +341,62 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 
-window.loadContractorDashboard = async function (contractorName) {
+window.loadContractorDashboard = async function (contractorName, useCacheOnly = false) {
     const welcomeEl = document.getElementById('welcome-msg');
     if (welcomeEl) welcomeEl.textContent = `Selamat Datang, ${contractorName}`;
 
     try {
-        const data = await API.getAll();
-        // Update global cache
-        window.allComplaints = data.complaints || [];
+        console.log(useCacheOnly ? "Loading contractor data from cache..." : "Refreshing tasks from server (Silent)...");
+        const data = await API.getAll(useCacheOnly);
+        if (!data) return;
 
         const allComplaints = data.complaints || [];
 
-        // Sync for consistency
-        // localStorage.setItem('complaints', JSON.stringify(allComplaints));
-
         // FILTER: Only show complaints assigned to this contractor
-        // Using flexible matching for both key name (contractor/Kontraktor) and value (casing/spaces)
         const myTasks = allComplaints.filter(c => {
             const assignedContractor = (c.contractor || c.Kontraktor || "").toString().toLowerCase().trim();
             const targetName = (contractorName || "").toString().toLowerCase().trim();
             return assignedContractor === targetName;
         });
 
-        // Calculate Stats
-        const newTasks = myTasks.filter(c => c.status === 'Tindakan Kontraktor' || c.status === 'Aduan Diterima').length;
-        const completed = myTasks.filter(c => c.status === 'Selesai').length;
-        const inProgress = myTasks.filter(c => c.status === 'Sedang Dibaiki Oleh Kontraktor' || c.status === 'Dalam Proses').length; // Support legacy 'Dalam Proses' just in case
+        // --- Detect New Tasks for Sound ---
+        if (!useCacheOnly && window.allComplaints && window.allComplaints.length > 0) {
+            const oldIds = window.allComplaints.map(c => (c.id || c['no. aduan'] || "").toString());
+            const newOnes = myTasks.filter(c => {
+                const cid = (c.id || c['no. aduan'] || "").toString();
+                return cid && !oldIds.includes(cid);
+            });
 
-        document.getElementById('stat-new').textContent = newTasks;
+            if (newOnes.length > 0) {
+                console.log("New task detected for contractor!");
+                playNotificationSound();
+            }
+        }
+
+        // Update global cache
+        window.allComplaints = allComplaints;
+
+        // Calculate Stats
+        const filteredNew = myTasks.filter(c => c.status === 'Tindakan Kontraktor' || c.status === 'Aduan Diterima').length;
+        const completed = myTasks.filter(c => c.status === 'Selesai').length;
+        const inProgress = myTasks.filter(c => c.status === 'Sedang Dibaiki Oleh Kontraktor' || c.status === 'Dalam Proses').length;
+
+        document.getElementById('stat-new').textContent = filteredNew;
         document.getElementById('stat-progress').textContent = inProgress;
         document.getElementById('stat-completed').textContent = completed;
 
         // Update Notification Badge
         const badge = document.getElementById('notif-badge');
         if (badge) {
-            if (newTasks > 0) {
-                badge.textContent = newTasks;
+            if (filteredNew > 0) {
+                badge.textContent = filteredNew;
                 badge.style.display = 'block';
             } else {
                 badge.style.display = 'none';
             }
         }
 
-        // Render Tables
+        // Render Tables (Silent Update)
         renderTaskTable(myTasks);
         renderHistoryTable(myTasks);
 
@@ -372,6 +407,19 @@ window.loadContractorDashboard = async function (contractorName) {
         console.error("Error loading dashboard:", err);
     }
 };
+
+// --- Fast Loading Strategy ---
+async function initContractorApp() {
+    const userName = localStorage.getItem('userName');
+    // 1. Instant Load from Cache
+    await loadContractorDashboard(userName, true);
+
+    // 2. Background Sync from Server (Silent)
+    loadContractorDashboard(userName, false);
+}
+
+// Replace the direct call in DOMContentLoaded with initContractorApp
+// (This will be handled in the next part of the file)
 
 function renderContractorNotifications(tasks) {
     const list = document.getElementById('notification-list');
@@ -472,10 +520,11 @@ function renderTaskTable(tasks) {
 
         const dateObj = task.timestamp ? new Date(task.timestamp) : new Date();
         const year = dateObj.getFullYear();
-        const contractorStr = task.contractor || 'SYK';
+        const contractorStr = task['kontraktor dilantik'] || task.contractor || 'SYK';
         const initials = (contractorStr.match(/\b\w/g) || ['S', 'Y', 'K']).slice(0, 3).join('').toUpperCase();
         const seqNum = String(tasks.length - index).padStart(4, '0');
         const displayId = `${initials}-${seqNum}/${year}`;
+        const taskId = task['no. aduan'] || task.id;
 
         const card = document.createElement('div');
         card.style.cssText = "background: #fff; border-left: 5px solid " + statusColor + "; border-radius: 8px; box-shadow: 0 4px 10px rgba(0,0,0,0.08); overflow: hidden; display: flex; flex-direction: column; margin-bottom: 20px;";
@@ -497,11 +546,11 @@ function renderTaskTable(tasks) {
                 <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
                     <div>
                         <small style="color: #95a5a6; text-transform: uppercase; font-weight: 700; font-size: 10px;">Butiran Aduan</small>
-                        <p style="margin: 5px 0 0 0; color: #333; font-weight: 500;">${task.description || '-'}</p>
+                        <p style="margin: 5px 0 0 0; color: #333; font-weight: 500;">${task['keterangan aduan'] || task.description || '-'}</p>
                     </div>
                     <div>
                         <small style="color: #95a5a6; text-transform: uppercase; font-weight: 700; font-size: 10px;">Lokasi</small>
-                        <p style="margin: 5px 0 0 0; color: #333; font-weight: 500;"><i class="fas fa-map-marker-alt" style="color: #e74c3c; margin-right: 5px;"></i> ${task.location || '-'}</p>
+                        <p style="margin: 5px 0 0 0; color: #333; font-weight: 500;"><i class="fas fa-map-marker-alt" style="color: #e74c3c; margin-right: 5px;"></i> ${task['lokasi kerosakan'] || task.location || '-'}</p>
                     </div>
                 </div>
                 
@@ -509,7 +558,7 @@ function renderTaskTable(tasks) {
                     <div>
                         <small style="color: #95a5a6; text-transform: uppercase; font-weight: 700; font-size: 10px;">Arahan JKR Admin</small>
                         <p style="margin: 5px 0 0 0; color: #555; font-style: italic; background: #fdfaf5; padding: 10px; border-radius: 6px; border-left: 3px solid #f39c12;">
-                            ${task.taskDescription || 'Tiada arahan khusus disediakan.'}
+                            ${task['keterangan tugasan'] || task.taskDescription || 'Tiada arahan khusus disediakan.'}
                         </p>
                     </div>
                     <div>
@@ -528,7 +577,7 @@ function renderTaskTable(tasks) {
             <!-- Card Footer / Action Buttons -->
             <div style="padding: 15px 20px; background: #f8f9fa; border-top: 1px solid #eee; display: flex; gap: 10px; justify-content: flex-end; flex-wrap: wrap;">
                 ${task.status === 'Tindakan Kontraktor' ? `
-                    <button onclick="clockIn('${task.id}')" 
+                    <button onclick="clockIn('${taskId}')" 
                         style="flex: 1; min-width: 120px; max-width: 180px; padding: 10px; background: #27ae60; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: background 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i class="fas fa-clock"></i> Clock In
                     </button>
@@ -538,7 +587,7 @@ function renderTaskTable(tasks) {
                         <i class="fas fa-edit"></i> Kemaskini
                     </button>
                 ` : `
-                    <button onclick="openUpdateModal('${task.id}')" 
+                    <button onclick="openUpdateModal('${taskId}')" 
                         style="flex: 1; min-width: 150px; max-width: 250px; padding: 10px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 700; font-size: 0.9rem; transition: background 0.3s; display: flex; align-items: center; justify-content: center; gap: 8px;">
                         <i class="fas fa-edit"></i> Kemaskini Tugasan
                     </button>
@@ -558,7 +607,7 @@ window.clockIn = async function (id) {
         const data = await API.getAll();
         const complaints = data.complaints || [];
         // Loose check for ID
-        const index = complaints.findIndex(c => c.id == id);
+        const index = complaints.findIndex(c => (c['no. aduan'] || c.id) == id);
 
         if (index !== -1) {
             complaints[index].status = 'Sedang Dibaiki Oleh Kontraktor';
@@ -567,9 +616,9 @@ window.clockIn = async function (id) {
             const now = new Date();
             const d = now.toLocaleDateString('en-CA');
             const t = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-            complaints[index].dateReceived = `${d} ${t}`; // Record Start Date-Time
+            complaints[index]['tarikh terima'] = `${d} ${t}`; // Record Start Date-Time
 
-            await API.saveAll(data);
+            await API.updateRecord('Aduan', 'no. aduan', id, complaints[index]);
 
             // Show success
             alert(`Clock In Berjaya: Tugasan ${id} kini Sedang Dibaiki Oleh Kontraktor.`);
@@ -606,7 +655,7 @@ window.openUpdateModal = async function (id) {
 
     // 1. Try Global Cache First
     if (window.allComplaints && Array.isArray(window.allComplaints)) {
-        complaint = window.allComplaints.find(c => c.id == id);
+        complaint = window.allComplaints.find(c => (c['no. aduan'] || c.id) == id);
     }
 
     // 2. Fetch if not found
@@ -614,7 +663,7 @@ window.openUpdateModal = async function (id) {
         try {
             const data = await API.getAll();
             window.allComplaints = data.complaints || []; // Update Cache
-            complaint = window.allComplaints.find(c => c.id == id);
+            complaint = window.allComplaints.find(c => (c['no. aduan'] || c.id) == id);
         } catch (e) {
             console.error("Fetch Error:", e);
             alert("Ralat sambungan. Sila periksa internet anda.");
@@ -630,13 +679,13 @@ window.openUpdateModal = async function (id) {
         document.getElementById('modal-display-id').textContent = safeText(complaint.id);
 
         // Fix Date & Time Format
-        const fullDate = `${complaint.date || ''} ${complaint.time || ''}`.trim();
+        const fullDate = `${complaint['tarikh aduan'] || complaint.date || ''} ${complaint['masa aduan'] || complaint.time || ''}`.trim();
         document.getElementById('modal-display-date').textContent = formatDisplayDate(fullDate);
 
-        document.getElementById('modal-display-name').textContent = safeText(complaint.name);
-        document.getElementById('modal-display-phone').textContent = safeText(complaint.phone);
-        document.getElementById('modal-display-location').textContent = safeText(complaint.location);
-        document.getElementById('modal-display-desc').textContent = complaint.description || 'Tiada keterangan.';
+        document.getElementById('modal-display-name').textContent = safeText(complaint['nama'] || complaint.name);
+        document.getElementById('modal-display-phone').textContent = safeText(complaint['no. telefon'] || complaint.phone);
+        document.getElementById('modal-display-location').textContent = safeText(complaint['lokasi kerosakan'] || complaint.location);
+        document.getElementById('modal-display-desc').textContent = complaint['keterangan aduan'] || complaint.description || 'Tiada keterangan.';
 
         // Image Handling (Main Complaint Image)
         const imgContainer = document.getElementById('modal-image-container');
@@ -692,7 +741,7 @@ window.openUpdateModal = async function (id) {
         renderPreview('preview-during', currentTaskImages.during, 'during');
 
         // After
-        document.getElementById('notes-after').value = progress.after?.notes || '';
+        document.getElementById('notes-after').value = progress.after?.notes || complaint['catatan kontraktor'] || '';
         renderPreview('preview-after', currentTaskImages.after, 'after');
 
         // Visibility of Complete Button
@@ -861,7 +910,7 @@ window.submitProgress = async function (action) {
             }
 
             if (action === 'clock-in') {
-                complaint.dateReceived = new Date().toISOString(); // Record when work actually started
+                complaint['tarikh terima'] = new Date().toISOString();
             }
 
             if (action === 'complete') {
@@ -878,29 +927,32 @@ window.submitProgress = async function (action) {
                 const manualTime = document.getElementById('complete-time-manual').value;
 
                 if (manualDate && manualTime) {
-                    complaint.dateCompleted = `${manualDate} ${manualTime}`;
+                    complaint['tarikh siap'] = `${manualDate} ${manualTime}`;
                 } else {
                     const now = new Date();
                     const d = now.toLocaleDateString('en-CA');
                     const t = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                    complaint.dateCompleted = `${d} ${t}`;
+                    complaint['tarikh siap'] = `${d} ${t}`;
                 }
 
                 // Recalculate duration
-                if (complaint.dateReceived) {
-                    const start = new Date(complaint.dateReceived);
-                    const end = new Date(complaint.dateCompleted);
+                const startTimeStr = complaint['tarikh terima'] || complaint.dateReceived;
+                const endTimeStr = complaint['tarikh siap'] || complaint.dateCompleted;
+
+                if (startTimeStr && endTimeStr) {
+                    const start = new Date(startTimeStr);
+                    const end = new Date(endTimeStr);
                     const diffMs = end - start;
                     const diffHours = diffMs / (1000 * 60 * 60);
 
                     if (diffHours < 24) {
                         const hours = Math.floor(diffHours);
                         const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                        complaint.duration = `${hours} Jam ${minutes} Minit`;
+                        complaint['tempoh siap'] = `${hours} Jam ${minutes} Minit`;
                     } else {
                         const days = Math.floor(diffHours / 24);
                         const remainingHours = Math.floor(diffHours % 24);
-                        complaint.duration = `${days} Hari ${remainingHours} Jam`;
+                        complaint['tempoh siap'] = `${days} Hari ${remainingHours} Jam`;
                     }
                 }
             }
@@ -916,7 +968,7 @@ window.submitProgress = async function (action) {
 
                 // EXTREMELY IMPORTANT: We use updateRecord to only send THIS complaint
                 // This prevents "Failed to Fetch" by not sending the entire database
-                const success = await API.updateRecord('Aduan', 'id', id, complaint);
+                const success = await API.updateRecord('Aduan', 'no. aduan', id, complaint);
 
                 if (!success) throw new Error("Gagal mengemaskini rekod di server.");
 
@@ -925,24 +977,30 @@ window.submitProgress = async function (action) {
                     // Notify Admin
                     await API.sendNotification('clock_in', {
                         complaintId: id,
-                        contractorName: complaint.contractor
+                        contractorName: complaint['kontraktor dilantik'] || complaint.contractor
                     });
                     // Notify User
                     await API.sendNotification('status_update', {
                         complaintId: id,
-                        userName: complaint.name,
-                        userEmail: complaint.email,
+                        userName: complaint['nama'] || complaint.name,
+                        userEmail: complaint['emel'] || complaint.email,
                         newStatus: 'Sedang Dibaiki Oleh Kontraktor',
-                        updateBy: complaint.contractor
+                        updateBy: complaint['kontraktor dilantik'] || complaint.contractor
                     });
                 } else if (action === 'complete') {
-                    // Notify User
+                    // 1. Notify User (Status Update)
                     await API.sendNotification('status_update', {
                         complaintId: id,
-                        userName: complaint.name,
-                        userEmail: complaint.email,
+                        userName: complaint['nama'] || complaint.name,
+                        userEmail: complaint['emel'] || complaint.email,
                         newStatus: 'Selesai (Menunggu Pengesahan)',
-                        updateBy: complaint.contractor
+                        updateBy: complaint['kontraktor dilantik'] || complaint.contractor
+                    });
+
+                    // 2. Notify Admin (Task Ready for Review) - NEW
+                    await API.sendNotification('task_completed', {
+                        complaintId: id,
+                        contractorName: complaint['kontraktor dilantik'] || complaint.contractor
                     });
                 }
 
