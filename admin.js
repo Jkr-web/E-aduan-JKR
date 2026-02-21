@@ -2538,56 +2538,75 @@ function renderFeedbackGrid(complaints) {
     }).join('');
 }
 
-window.downloadReportPDF = function () {
-    const btnPdf = document.getElementById('btn-download-pdf');
+/**
+ * Shared function to generate the report HTML for both PDF and Preview
+ */
+window.generateReportHTML = function () {
     const complaints = window.allComplaints || [];
-
-    if (complaints.length === 0) {
-        alert("Tiada data untuk dijana.");
-        return;
-    }
-
-    // Create a temporary container for the PDF - Calibrated for A4
-    const reportDiv = document.createElement('div');
-    reportDiv.id = 'pdf-render-container';
-    // 720px width fits perfectly in A4 with 15mm margins
-    reportDiv.style.cssText = 'width: 720px; padding: 0; background: white; font-family: "Helvetica", "Arial", sans-serif; color: #333; margin: 0 auto;';
+    const stats = {
+        total: complaints.length,
+        selesai: complaints.filter(c => c.status === 'Selesai').length,
+        proses: complaints.filter(c => !['Selesai', 'Ditolak', 'Baru'].includes(c.status)).length,
+        baru: complaints.filter(c => c.status === 'Baru').length,
+        rejected: complaints.filter(c => c.status === 'Ditolak').length
+    };
 
     const dateStr = new Date().toLocaleDateString('ms-MY', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
     const logoUrl = localStorage.getItem('appLogo') || '';
+    const systemName = localStorage.getItem('systemName') || 'PORTAL JKR ADUAN';
 
-    // 1. OFFICIAL HEADER (Centered)
+    // 1. PREMIUM HEADER
     let headerHtml = `
-        <div style="padding: 50px 40px 20px 40px; border-bottom: 3px double #2c3e50; margin-bottom: 30px; text-align: center;">
-            <div style="display: inline-block; width: 100%;">
-    `;
-
-    if (logoUrl) {
-        headerHtml += `<img src="${logoUrl}" style="height: 75px; margin-bottom: 15px; object-fit: contain;">`;
-    } else {
-        headerHtml += `<div style="font-size: 30px; font-weight: 900; color: #2c3e50; margin-bottom: 15px; letter-spacing: 2px;">JKR</div>`;
-    }
-
-    headerHtml += `
-                <h1 style="margin: 0; font-size: 20px; color: #1a1a1a; letter-spacing: 0.5px; text-transform: uppercase; font-weight: 800;">Jabatan Kerja Raya Malaysia</h1>
-                <h2 style="margin: 5px 0 0 0; font-size: 15px; color: #2c3e50; font-weight: 600;">PORTAL PENGURUSAN ADUAN KEROSAKAN (JKR ADUAN)</h2>
-                <div style="margin: 15px auto; width: 80px; height: 3px; background: #3498db;"></div>
-                <p style="margin: 10px 0 0 0; font-size: 12px; color: #7f8c8d; font-weight: 600; text-transform: uppercase;">LAPORAN ANALISIS STATUS ADUAN • ${dateStr}</p>
+        <div style="padding: 40px; border-bottom: 2px solid #f1f5f9; background: linear-gradient(to right, #ffffff, #f8fafc); display: flex; align-items: center; justify-content: space-between;">
+            <div style="display: flex; align-items: center; gap: 20px;">
+                ${logoUrl ? `<img src="${logoUrl}" style="height: 60px; object-fit: contain;">` : '<div style="width: 60px; height: 60px; background: #2c3e50; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 900; font-size: 24px;">JKR</div>'}
+                <div>
+                    <h1 style="margin: 0; font-size: 22px; font-weight: 800; color: #0f172a; text-transform: uppercase; letter-spacing: -0.5px;">${systemName}</h1>
+                    <p style="margin: 2px 0 0 0; font-size: 13px; color: #64748b; font-weight: 500;">LAPORAN ANALISIS & STATISTIK ADUAN KEROSAKAN</p>
+                </div>
+            </div>
+            <div style="text-align: right;">
+                <div style="font-size: 11px; color: #94a3b8; text-transform: uppercase; letter-spacing: 1px; font-weight: 700;">Tarikh Laporan</div>
+                <div style="font-size: 14px; font-weight: 700; color: #2c3e50;">${dateStr}</div>
             </div>
         </div>
     `;
 
-    // 2. SUMMARY STATISTICS (Properly Centered)
-    let chartHtml = '';
+    // 2. STATISTICS CARDS
+    let statsSection = `
+        <div style="padding: 30px 40px; background: #fff;">
+            <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+                <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 15px; text-align: center;">
+                    <div style="font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 5px;">Jumlah Aduan</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #0f172a;">${stats.total}</div>
+                </div>
+                <div style="background: #ecfdf5; border: 1px solid #d1fae5; border-radius: 12px; padding: 15px; text-align: center;">
+                    <div style="font-size: 10px; font-weight: 800; color: #065f46; text-transform: uppercase; margin-bottom: 5px;">Selesai</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #059669;">${stats.selesai}</div>
+                </div>
+                <div style="background: #eff6ff; border: 1px solid #dbeafe; border-radius: 12px; padding: 15px; text-align: center;">
+                    <div style="font-size: 10px; font-weight: 800; color: #1e40af; text-transform: uppercase; margin-bottom: 5px;">Dalam Proses</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #2563eb;">${stats.proses}</div>
+                </div>
+                <div style="background: #fffbeb; border: 1px solid #fef3c7; border-radius: 12px; padding: 15px; text-align: center;">
+                    <div style="font-size: 10px; font-weight: 800; color: #92400e; text-transform: uppercase; margin-bottom: 5px;">Baru / Ditolak</div>
+                    <div style="font-size: 24px; font-weight: 800; color: #d97706;">${stats.baru + stats.rejected}</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // 3. CHART SECTION
+    let chartSection = '';
     const canvas = document.getElementById('statusChart');
     if (canvas) {
         try {
             const chartImgUrl = canvas.toDataURL('image/png', 1.0);
-            chartHtml = `
-                <div style="padding: 0 40px; margin-bottom: 35px; page-break-inside: avoid;">
-                    <div style="background: #f8f9fa; border-radius: 10px; padding: 20px; border: 1px solid #e9ecef; text-align: center;">
-                        <h4 style="margin: 0 0 15px 0; font-size: 14px; color: #2c3e50; text-transform: uppercase; border-left: 4px solid #3498db; padding-left: 12px; font-weight: 700; text-align: left;">Ringkasan Visual Statistik</h4>
-                        <img src="${chartImgUrl}" style="max-width: 450px; height: auto; display: inline-block;">
+            chartSection = `
+                <div style="padding: 0 40px 30px 40px; page-break-inside: avoid;">
+                    <div style="background: #ffffff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 25px; display: flex; flex-direction: column; align-items: center;">
+                        <h3 style="margin: 0 0 20px 0; font-size: 14px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #3498db; padding-bottom: 5px;">Taburan Status Aduan semasa</h3>
+                        <img src="${chartImgUrl}" style="height: 220px; width: auto; object-fit: contain;">
                     </div>
                 </div>
             `;
@@ -2596,91 +2615,191 @@ window.downloadReportPDF = function () {
         }
     }
 
-    // 3. DATA TABLE (Balanced width)
+    // 4. DATA TABLE
     let tableHtml = '';
     const tableSource = document.getElementById('report-table');
     if (tableSource) {
         const tableClone = tableSource.cloneNode(true);
-        tableClone.style.cssText = 'width: 100%; border-collapse: separate; border-spacing: 0; font-size: 10.5px; margin-bottom: 30px; border: 1px solid #dee2e6; border-radius: 6px; overflow: hidden;';
+        // Style the clone for PDF
+        tableClone.style.cssText = 'width: 100%; border-collapse: collapse; font-size: 10px; color: #334155;';
 
+        // Style Headers
         const ths = tableClone.querySelectorAll('th');
         ths.forEach(th => {
-            th.style.cssText = 'background-color: #2c3e50; color: #ffffff; padding: 12px 8px; text-align: left; font-weight: 700; border-bottom: 2px solid #1a1a1a;';
+            th.style.cssText = 'background: #f8fafc; color: #475569; padding: 12px 10px; text-align: left; font-weight: 700; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-size: 9px;';
         });
 
+        // Style Rows
         const trs = tableClone.querySelectorAll('tbody tr');
         trs.forEach((tr, index) => {
-            tr.style.backgroundColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+            tr.style.background = index % 2 === 0 ? '#ffffff' : '#fcfcfc';
             tr.style.pageBreakInside = 'avoid';
 
             const tds = tr.querySelectorAll('td');
             tds.forEach(td => {
-                td.style.cssText = 'padding: 8px; border-bottom: 1px solid #dee2e6; vertical-align: top; color: #444; line-height: 1.4;';
+                td.style.cssText = 'padding: 10px; border-bottom: 1px solid #f1f5f9; line-height: 1.4; vertical-align: top;';
+                // Adjust status badge inside cell
+                const statusBadge = td.querySelector('span');
+                if (statusBadge) {
+                    statusBadge.style.display = 'inline-block';
+                    statusBadge.style.padding = '2px 6px';
+                    statusBadge.style.fontSize = '8px';
+                    statusBadge.style.fontWeight = 'bold';
+                    statusBadge.style.borderRadius = '4px';
+                }
             });
         });
 
         tableHtml = `
-            <div style="padding: 0 40px;">
-                <h4 style="margin: 0 0 15px 0; font-size: 14px; color: #2c3e50; text-transform: uppercase; border-left: 4px solid #2ecc71; padding-left: 12px; font-weight: 700;">Butiran Transaksi Aduan</h4>
-                <div style="width: 100%; overflow: hidden;">
+            <div style="padding: 0 40px 40px 40px;">
+                <h3 style="margin: 0 0 15px 0; font-size: 14px; color: #475569; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid #2ecc71; padding-bottom: 5px;">Senarai Terperinci Aduan</h3>
+                <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden;">
                     ${tableClone.outerHTML}
                 </div>
             </div>
         `;
     }
 
-    // 4. FOOTER
+    // 5. FOOTER
     const footerHtml = `
-        <div style="padding: 15px 40px 40px 40px; margin-top: 10px; border-top: 1px solid #dee2e6; font-size: 10px; color: #95a5a6; display: flex; justify-content: space-between; align-items: center;">
-            <div style="font-weight: 600;">
-                <span style="color: #2c3e50;">SISTEM JKR ADUAN</span> • Jana Laporan Automatik
+        <div style="padding: 20px 40px; border-top: 1px solid #f1f5f9; background: #f8fafc; display: flex; justify-content: space-between; align-items: center; font-size: 10px; color: #94a3b8;">
+            <div>
+                <strong>Sistem JKR Aduan</strong> &copy; ${new Date().getFullYear()} - Jabatan Kerja Raya Malaysia
             </div>
-            <div style="text-align: right;">
-                Tarikh Cetakan: ${new Date().toLocaleString('ms-MY')}<br>
-                Halaman 1
+            <div>
+                Laporan Berkomputer - Dijana pada ${new Date().toLocaleString('ms-MY')}
             </div>
         </div>
     `;
 
-    // Combine all sections
-    reportDiv.innerHTML = headerHtml + chartHtml + tableHtml + footerHtml;
-    // Add to body temporarily to ensure correct calculation in some browsers
+    // Assembly wrapper to mimic A4 width in preview
+    return `
+        <div id="printable-report" style="width: 794px; background: white; font-family: 'Inter', Helvetica, Arial, sans-serif; color: #1e293b; margin: 0 auto; box-shadow: 0 0 20px rgba(0,0,0,0.1);">
+            ${headerHtml + statsSection + chartSection + tableHtml + footerHtml}
+        </div>
+    `;
+};
+
+window.previewReport = function () {
+    const complaints = window.allComplaints || [];
+    if (complaints.length === 0) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: 'info', title: 'Tiada Data', text: 'Tiada data aduan untuk dipratonton.' });
+        } else {
+            alert("Tiada data aduan.");
+        }
+        return;
+    }
+
+    const modal = document.getElementById('report-preview-modal');
+    const body = document.getElementById('report-preview-body');
+    if (!modal || !body) return;
+
+    modal.style.display = 'flex';
+    body.innerHTML = '<div style="text-align: center; padding: 50px;"><i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #3498db;"></i><p style="margin-top:15px; font-weight:600; color:#64748b;">Menjana pratonton laporan...</p></div>';
+
+    setTimeout(() => {
+        body.innerHTML = window.generateReportHTML();
+    }, 400);
+};
+
+window.closeReportPreview = function () {
+    const modal = document.getElementById('report-preview-modal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.printReport = function () {
+    const previewContent = document.getElementById('report-preview-body').innerHTML;
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+            <head>
+                <title>Cetak Laporan JKR Aduan</title>
+                <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&display=swap" rel="stylesheet">
+                <style>
+                    body { margin: 0; padding: 0; background: white; }
+                    #printable-report { margin: 0 auto !important; box-shadow: none !important; }
+                    @media print {
+                        @page { size: A4; margin: 0; }
+                        body { margin: 0; }
+                        #printable-report { width: 100% !important; margin: 0 !important; }
+                    }
+                </style>
+            </head>
+            <body onload="window.print(); window.close();">
+                ${previewContent}
+            </body>
+        </html>
+    `);
+    printWindow.document.close();
+};
+
+window.downloadReportPDF = function () {
+    const btnPdf = document.getElementById('btn-download-pdf-main') || document.getElementById('btn-download-pdf-modal');
+    const complaints = window.allComplaints || [];
+
+    if (complaints.length === 0) {
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({ icon: 'info', title: 'Tiada Data', text: 'Tiada data aduan untuk dijana buat masa ini.' });
+        } else {
+            alert("Tiada data untuk dijana.");
+        }
+        return;
+    }
+
+    const originalBtnHtml = btnPdf ? btnPdf.innerHTML : '';
+    if (btnPdf) {
+        btnPdf.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menjana PDF...';
+        btnPdf.disabled = true;
+    }
+
+    // Capture the generated HTML
+    const reportHTML = window.generateReportHTML();
+
+    // Create a temporary container for html2pdf
+    const reportDiv = document.createElement('div');
+    reportDiv.innerHTML = reportHTML;
+
+    // Remove the shadow wrapper from the printable content for PDF conversion
+    const content = reportDiv.querySelector('#printable-report');
+    if (content) content.style.boxShadow = 'none';
+
     reportDiv.style.position = 'absolute';
     reportDiv.style.left = '-9999px';
-    reportDiv.style.top = '0';
     document.body.appendChild(reportDiv);
 
     const opt = {
-        margin: 15, // 15mm margin all around
+        margin: [0, 0, 0, 0],
         filename: `Laporan_Aduan_JKR_${new Date().toISOString().slice(0, 10)}.pdf`,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
             scale: 2,
             useCORS: true,
             logging: false,
-            windowWidth: 720 // Match our reportDiv width
+            letterRendering: true,
+            windowWidth: 794
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        jsPDF: { unit: 'px', format: 'a4', orientation: 'portrait', hotfixes: ['px_scaling'] }
     };
 
     if (window.html2pdf) {
-        btnPdf.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menjana...';
-        btnPdf.disabled = true;
-
-        html2pdf().set(opt).from(reportDiv).save().then(() => {
-            btnPdf.innerHTML = '<i class="fas fa-file-pdf"></i> Muat Turun PDF';
-            btnPdf.disabled = false;
+        html2pdf().set(opt).from(reportDiv.querySelector('#printable-report') || reportDiv).save().then(() => {
+            if (btnPdf) {
+                btnPdf.innerHTML = originalBtnHtml;
+                btnPdf.disabled = false;
+            }
             document.body.removeChild(reportDiv);
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({ icon: 'success', title: 'Berjaya!', text: 'Laporan PDF telah dimuat turun.', timer: 2000, showConfirmButton: false });
+            }
         }).catch(err => {
-            console.error("PDF Final Error:", err);
-            alert("Ralat menjana PDF.");
-            btnPdf.innerHTML = '<i class="fas fa-file-pdf"></i> Muat Turun PDF';
-            btnPdf.disabled = false;
-            if (document.getElementById('pdf-render-container')) document.body.removeChild(reportDiv);
+            console.error("PDF Fail:", err);
+            if (btnPdf) {
+                btnPdf.innerHTML = originalBtnHtml;
+                btnPdf.disabled = false;
+            }
+            if (reportDiv.parentNode) document.body.removeChild(reportDiv);
         });
-    } else {
-        alert("Library PDF gagal dimuatkan.");
-        document.body.removeChild(reportDiv);
     }
 };
 
