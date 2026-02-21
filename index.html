@@ -472,6 +472,14 @@
 
         // Check if already logged in
         (function () {
+            const params = new URLSearchParams(window.location.search);
+            if (params.has('timeout')) {
+                // Use alert or SweetAlert if available
+                setTimeout(() => {
+                    alert("Sesi anda telah tamat kerna tidak aktif. Sila log masuk semula.");
+                }, 500);
+            }
+
             const userRole = localStorage.getItem('userRole');
             if (userRole === 'admin') {
                 window.location.href = 'main.html';
@@ -582,7 +590,7 @@
                 // 3. Auth success
                 if (userMetadata || targetEmail === 'admin@jkr.gov.my') {
                     const finalUser = userMetadata || { name: 'Super Admin', email: 'admin@jkr.gov.my' };
-                    successLogin(type, finalUser);
+                    successLogin(type, finalUser, data.settings || {});
                 } else {
                     throw new Error("Akaun sah tetapi peranan tidak dijumpai.");
                 }
@@ -616,7 +624,17 @@
             }
         };
 
-        function successLogin(type, found) {
+        function successLogin(type, found, settings = {}) {
+            // Clean up session state before landing
+            localStorage.removeItem('activeAdminSection');
+            localStorage.removeItem('activeContractorTab');
+
+            // Persist System Settings for this session
+            if (settings.idleTimeout) localStorage.setItem('idleTimeout', settings.idleTimeout);
+            if (settings.systemName) localStorage.setItem('systemName', settings.systemName);
+            if (settings.appLogo) localStorage.setItem('appLogo', settings.appLogo);
+            if (settings.appBackground) localStorage.setItem('appBackground', settings.appBackground);
+
             if (type === 'admin') {
                 localStorage.setItem('userRole', 'admin');
                 localStorage.setItem('userName', found.name);

@@ -67,7 +67,7 @@
             <li><a href="#tetapan"><i class="fas fa-cog"></i> Tetapan</a></li>
             <li><a href="index.html" class="logout"><i class="fas fa-sign-out-alt"></i> Log Keluar</a></li>
         </ul>
-        <div class="user-profile">
+        <div class="user-profile" onclick="openProfileModal()" title="Klik untuk kemaskini profil">
             <!-- Content injected by JS -->
             <i class="fas fa-user-circle" style="font-size: 24px;"></i> <span>Admin JKR</span>
         </div>
@@ -439,9 +439,17 @@
                                     Copyright</label>
                                 <input type="text" id="setting-footer-copyright"
                                     value="&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara."
+                                    style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px; margin-bottom: 15px;">
+
+                                <label
+                                    style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Masa
+                                    Idle Automatik (Saat)</label>
+                                <input type="number" id="setting-idle-timeout" min="10" value="300"
                                     style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 14px;">
+                                <small style="display: block; margin-top: 5px; color: #7f8c8d;">Pengguna akan log keluar
+                                    automatik jika tidak aktif. Minimum 10 saat.</small>
                             </div>
-                            <div>
+                            <div style="margin-bottom: 20px;">
                                 <label
                                     style="display: block; margin-bottom: 8px; font-weight: 600; color: #2c3e50;">Saiz
                                     Tulisan (Font Size)</label>
@@ -1181,6 +1189,38 @@
                     </div>
                 </div>
 
+                <!-- Password Update Section for Admin -->
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Kemaskini Kata
+                        Laluan (Kosongkan jika tidak mahu tukar)</label>
+                    <div class="password-field-container" style="position: relative;">
+                        <input type="password" id="edit-company-password" placeholder="••••••••"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; padding-right: 40px;"
+                            oninput="checkPasswordStrength('edit-company-password', 'edit-contractor')">
+                        <i class="fas fa-eye"
+                            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #7f8c8d;"
+                            onclick="toggleRegPassword('edit-company-password', this)"></i>
+                    </div>
+                    <!-- Strength Meter -->
+                    <div id="edit-contractor-strength-meter" class="strength-meter">
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                        <div class="strength-segment"></div>
+                    </div>
+                    <!-- Hints -->
+                    <div class="password-hints">
+                        <div id="edit-contractor-hint-upper" class="hint-item"><i class="fas fa-circle"></i> Huruf Besar
+                        </div>
+                        <div id="edit-contractor-hint-lower" class="hint-item"><i class="fas fa-circle"></i> Huruf Kecil
+                        </div>
+                        <div id="edit-contractor-hint-special" class="hint-item"><i class="fas fa-circle"></i> Simbol
+                            (@)</div>
+                        <div id="edit-contractor-hint-number" class="hint-item"><i class="fas fa-circle"></i> Nombor (1)
+                        </div>
+                    </div>
+                </div>
+
                 <div style="display: flex; gap: 10px;">
                     <button type="button" onclick="closeEditContractorModal()"
                         style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold;">Batal</button>
@@ -1258,6 +1298,89 @@
             </form>
         </div>
     </div>
+    <!-- Profile Settings Modal -->
+    <div id="profile-modal" class="modal"
+        style="display: none; position: fixed; z-index: 4000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); backdrop-filter: blur(5px); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden;">
+            <div
+                style="padding: 20px; background: linear-gradient(135deg, #2c3e50, #34495e); color: white; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;"><i class="fas fa-user-cog"></i> Profil Saya</h3>
+                <span onclick="closeProfileModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <form id="form-update-profile" style="padding: 25px;">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Nama
+                        Penuh</label>
+                    <input type="text" id="profile-name" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label id="label-position"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Jawatan</label>
+                    <input type="text" id="profile-position" required
+                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">No. Tel
+                            Pejabat</label>
+                        <input type="tel" id="profile-offphone" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">No. Tel
+                            Bimbit</label>
+                        <input type="tel" id="profile-mobile" required
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box;">
+                    </div>
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tukar Kata
+                        Laluan (Kosongkan jika tidak mahu tukar)</label>
+                    <div class="password-field-container" style="position: relative;">
+                        <input type="password" id="profile-password" placeholder="••••••••"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; padding-right: 40px;">
+                        <i class="fas fa-eye"
+                            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #7f8c8d;"
+                            onclick="toggleRegPassword('profile-password', this)"></i>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" onclick="closeProfileModal()"
+                        style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Batal</button>
+                    <button type="submit"
+                        style="flex: 1; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">Simpan
+                        Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <!-- Timeout Warning Modal -->
+    <div id="timeout-warning-modal" class="timeout-overlay">
+        <div class="timeout-card">
+            <div class="timeout-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.5rem;">Sesi Hampir Tamat</h2>
+            <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+                Anda telah tidak aktif untuk seketika. Sesi anda akan ditamatkan dalam:
+            </p>
+            <div style="font-size: 2.5rem; font-weight: 800; color: #ef4444; margin: 15px 0;" id="timeout-countdown">30
+            </div>
+
+            <div class="timeout-progress-container">
+                <div id="timeout-progress" class="timeout-progress-bar"></div>
+            </div>
+
+            <button class="btn-stay" id="btn-stay-logged-in">Teruskan Sesi Saya</button>
+        </div>
+    </div>
 </body>
+
 
 </html>

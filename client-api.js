@@ -375,14 +375,18 @@ const normalizeData = (data) => {
             }
             list[index] = normalizedItem;
 
-            // Fix Phone Data formatting
+            // Fix Phone Data formatting for all phone-related fields
             const currentItem = list[index];
-            if (currentItem.phone) {
-                let p = currentItem.phone.toString().trim();
-                if (p.startsWith("'")) p = p.substring(1);
-                if (p && !p.startsWith('0') && !p.startsWith('+') && !p.startsWith('6')) p = '0' + p;
-                currentItem.phone = p;
-            }
+            const phoneFields = ['phone', 'offphone', 'mobile'];
+
+            phoneFields.forEach(field => {
+                if (currentItem[field]) {
+                    let p = currentItem[field].toString().trim();
+                    if (p.startsWith("'")) p = p.substring(1);
+                    if (p && !p.startsWith('0') && !p.startsWith('+') && !p.startsWith('6')) p = '0' + p;
+                    currentItem[field] = p;
+                }
+            });
         });
     };
 

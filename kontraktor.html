@@ -45,7 +45,7 @@
             <li><a href="#history" onclick="switchTab('history')"><i class="fas fa-history"></i> Sejarah Tugasan</a>
             <li><a href="index.html" class="logout"><i class="fas fa-sign-out-alt"></i> Log Keluar</a></li>
         </ul>
-        <div class="user-profile">
+        <div class="user-profile" onclick="openProfileModal()" title="Klik untuk kemaskini profil">
             <!-- Content injected by JS -->
             <i class="fas fa-hard-hat"></i> <span>Nama Syarikat</span>
         </div>
@@ -98,144 +98,150 @@
             </div>
         </header>
 
-        <!-- 1. Dashboard Section -->
-        <section id="dashboard" class="section active" style="display: block;">
-            <h1 class="page-title">Dashboard Kontraktor</h1>
-            <p id="welcome-msg">Selamat Datang , Nama Syarikat</p>
+        <div class="content-body">
+            <!-- 1. Dashboard Section -->
+            <section id="dashboard" class="section active" style="display: block;">
+                <h1 class="page-title">Dashboard Kontraktor</h1>
+                <p id="welcome-msg">Selamat Datang , Nama Syarikat</p>
 
-            <div class="dashboard-cards"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
-                <!-- Card 1: Tugasan Baru -->
-                <div class="card"
-                    style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <h3>Tugasan Baru</h3>
-                    <p id="stat-new" style="font-size: 2.5em; color: #e67e22; margin: 10px 0;">0</p>
-                    <small>Perlu Tindakan Segera</small>
+                <div class="dashboard-cards"
+                    style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-top: 20px;">
+                    <!-- Card 1: Tugasan Baru -->
+                    <div class="card"
+                        style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <h3>Tugasan Baru</h3>
+                        <p id="stat-new" style="font-size: 2.5em; color: #e67e22; margin: 10px 0;">0</p>
+                        <small>Perlu Tindakan Segera</small>
+                    </div>
+                    <!-- Card 2: Dalam Proses -->
+                    <div class="card"
+                        style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <h3>Dalam Proses</h3>
+                        <p id="stat-progress" style="font-size: 2.5em; color: #3498db; margin: 10px 0;">0</p>
+                        <small>Sedang Dibaiki</small>
+                    </div>
+                    <!-- Card 3: Selesai -->
+                    <div class="card"
+                        style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        <h3>Selesai</h3>
+                        <p id="stat-completed" style="font-size: 2.5em; color: #2ecc71; margin: 10px 0;">0</p>
+                        <small>Tugasan Siap</small>
+                    </div>
                 </div>
-                <!-- Card 2: Dalam Proses -->
-                <div class="card"
-                    style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <h3>Dalam Proses</h3>
-                    <p id="stat-progress" style="font-size: 2.5em; color: #3498db; margin: 10px 0;">0</p>
-                    <small>Sedang Dibaiki</small>
+
+                <!-- Notifikasi Terkini Section -->
+                <div id="notification-section"
+                    style="margin-top: 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <h3><i class="fas fa-bell" style="color: #f39c12;"></i> Notifikasi Terkini</h3>
+                    <ul id="notification-list" style="list-style: none; padding: 0; margin-top: 15px;">
+                        <!-- To be populated by JS -->
+                        <li style="padding: 15px; text-align: center; color: #999;">Tiada notifikasi terkini.</li>
+                    </ul>
                 </div>
-                <!-- Card 3: Selesai -->
-                <div class="card"
-                    style="background: white; padding: 20px; border-radius: 8px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <h3>Selesai</h3>
-                    <p id="stat-completed" style="font-size: 2.5em; color: #2ecc71; margin: 10px 0;">0</p>
-                    <small>Tugasan Siap</small>
+
+
+            </section>
+
+            <!-- 2. Senarai Tugasan Section -->
+            <section id="senarai-tugasan" class="section" style="display: none;">
+                <h1 class="page-title">Senarai Semua Tugasan</h1>
+                <div id="tasks-container" style="display: flex; flex-direction: column; gap: 20px;">
+                    <!-- Cards will be populated by JS -->
+                    <div
+                        style="padding: 40px; text-align: center; color: #95a5a6; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                        Memuatkan tugasan...
+                    </div>
                 </div>
-            </div>
+            </section>
 
-            <!-- Notifikasi Terkini Section -->
-            <div id="notification-section"
-                style="margin-top: 30px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                <h3><i class="fas fa-bell" style="color: #f39c12;"></i> Notifikasi Terkini</h3>
-                <ul id="notification-list" style="list-style: none; padding: 0; margin-top: 15px;">
-                    <!-- To be populated by JS -->
-                    <li style="padding: 15px; text-align: center; color: #999;">Tiada notifikasi terkini.</li>
-                </ul>
-            </div>
-
-
-        </section>
-
-        <!-- 2. Senarai Tugasan Section -->
-        <section id="senarai-tugasan" class="section" style="display: none;">
-            <h1 class="page-title">Senarai Semua Tugasan</h1>
-            <div id="tasks-container" style="display: flex; flex-direction: column; gap: 20px;">
-                <!-- Cards will be populated by JS -->
+            <!-- 3. Sejarah Tugasan Section -->
+            <section id="history" class="section" style="display: none;">
                 <div
-                    style="padding: 40px; text-align: center; color: #95a5a6; background: #fff; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    Memuatkan tugasan...
-                </div>
-            </div>
-        </section>
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
+                    <div>
+                        <h1 class="page-title" style="margin: 0;">Sejarah Tugasan</h1>
+                        <p style="color: #7f8c8d; margin-top: 5px;">Rekod semua tugasan yang telah disiapkan.</p>
+                    </div>
 
-        <!-- 3. Sejarah Tugasan Section -->
-        <section id="history" class="section" style="display: none;">
-            <div
-                style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; flex-wrap: wrap; gap: 15px;">
-                <div>
-                    <h1 class="page-title" style="margin: 0;">Sejarah Tugasan</h1>
-                    <p style="color: #7f8c8d; margin-top: 5px;">Rekod semua tugasan yang telah disiapkan.</p>
+                    <!-- Action Buttons -->
+                    <div style="display: flex; gap: 10px;">
+                        <button onclick="printHistory()"
+                            style="padding: 10px 18px; background: #2c3e50; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; transition: all 0.2s;">
+                            <i class="fas fa-print"></i> Cetak Laporan
+                        </button>
+                        <button onclick="downloadHistoryPDF()"
+                            style="padding: 10px 18px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.2); transition: all 0.2s;">
+                            <i class="fas fa-file-pdf"></i> Muat Turun PDF
+                        </button>
+                    </div>
                 </div>
 
-                <!-- Action Buttons -->
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="printHistory()"
-                        style="padding: 10px 18px; background: #2c3e50; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; transition: all 0.2s;">
-                        <i class="fas fa-print"></i> Cetak Laporan
+                <!-- Filters -->
+                <div
+                    style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap;">
+                    <div style="flex: 1; min-width: 150px;">
+                        <label
+                            style="display: block; font-size: 0.85rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Tarikh
+                            Mula</label>
+                        <input type="date" id="filter-date-start"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    <div style="flex: 1; min-width: 150px;">
+                        <label
+                            style="display: block; font-size: 0.85rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Tarikh
+                            Tamat</label>
+                        <input type="date" id="filter-date-end"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                    </div>
+                    <button onclick="filterHistory()"
+                        style="padding: 11px 25px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                        Tapis Rekod
                     </button>
-                    <button onclick="downloadHistoryPDF()"
-                        style="padding: 10px 18px; background: #e74c3c; color: white; border: none; border-radius: 6px; cursor: pointer; display: flex; align-items: center; gap: 8px; font-weight: 500; box-shadow: 0 4px 10px rgba(231, 76, 60, 0.2); transition: all 0.2s;">
-                        <i class="fas fa-file-pdf"></i> Muat Turun PDF
+                    <button onclick="resetHistoryFilter()"
+                        style="padding: 11px 20px; background: #f1f2f6; color: #2c3e50; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
+                        Reset
                     </button>
                 </div>
-            </div>
 
-            <!-- Filters -->
-            <div
-                style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); margin-bottom: 25px; display: flex; align-items: flex-end; gap: 20px; flex-wrap: wrap;">
-                <div style="flex: 1; min-width: 150px;">
-                    <label
-                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Tarikh
-                        Mula</label>
-                    <input type="date" id="filter-date-start"
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                <!-- History Table -->
+                <div class="table-responsive"
+                    style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 15px rgba(0,0,0,0.05);">
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #f8f9fa; text-align: left;">
+                                <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">ID Aduan
+                                </th>
+                                <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Pengadu /
+                                    Lokasi</th>
+                                <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Tarikh Siap
+                                </th>
+                                <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Tempoh Siap
+                                </th>
+                                <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Status</th>
+                                <th
+                                    style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50; text-align: center;">
+                                    Tindakan</th>
+                            </tr>
+                        </thead>
+                        <tbody id="history-table-body">
+                            <!-- Populated by JS -->
+                        </tbody>
+                    </table>
                 </div>
-                <div style="flex: 1; min-width: 150px;">
-                    <label
-                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #2c3e50; margin-bottom: 8px;">Tarikh
-                        Tamat</label>
-                    <input type="date" id="filter-date-end"
-                        style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-                </div>
-                <button onclick="filterHistory()"
-                    style="padding: 11px 25px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
-                    Tapis Rekod
-                </button>
-                <button onclick="resetHistoryFilter()"
-                    style="padding: 11px 20px; background: #f1f2f6; color: #2c3e50; border: none; border-radius: 6px; cursor: pointer; font-weight: 500;">
-                    Reset
-                </button>
-            </div>
+            </section>
 
-            <!-- History Table -->
-            <div class="table-responsive"
-                style="background: white; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 15px rgba(0,0,0,0.05);">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <thead>
-                        <tr style="background: #f8f9fa; text-align: left;">
-                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">ID Aduan
-                            </th>
-                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Pengadu /
-                                Lokasi</th>
-                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Tarikh Siap
-                            </th>
-                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Tempoh Siap
-                            </th>
-                            <th style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50;">Status</th>
-                            <th
-                                style="padding: 15px; border-bottom: 2px solid #edeff2; color: #2c3e50; text-align: center;">
-                                Tindakan</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-table-body">
-                        <!-- Populated by JS -->
-                    </tbody>
-                </table>
-            </div>
-        </section>
+            <!-- Hidden Print Container -->
+            <div id="print-container" style="display: none;"></div>
 
-        <!-- Hidden Print Container -->
-        <div id="print-container" style="display: none;"></div>
-    </div>
+            <footer id="main-footer" class="global-footer" style="margin-top: 50px;">
+                <span id="footer-text">&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara.</span>
+            </footer>
+        </div> <!-- End of content-body -->
+    </div> <!-- End of main-content -->
 
     <!-- Update Status Modal -->
     <div id="update-task-modal" class="modal"
-        style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.5); justify-content: center; align-items: center;">
+        style="display: none; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center;">
         <div class="modal-content"
             style="background-color: #fff; border-radius: 8px; width: 90%; max-width: 600px; display: flex; flex-direction: column; max-height: 90vh; box-shadow: 0 4px 6px rgba(0,0,0,0.1); overflow: hidden;">
 
@@ -586,10 +592,213 @@
         })();
     </script>
 
-    <!-- Footer Copyright for Contractor Panel -->
-    <footer id="main-footer" class="global-footer" style="margin-left: 260px; background: white;">
-        <span id="footer-text">&copy; 2024 Jabatan Kerja Raya. Hak Cipta Terpelihara.</span>
-    </footer>
+    <!-- Timeout Warning Modal -->
+    <div id="timeout-warning-modal" class="timeout-overlay">
+        <div class="timeout-card">
+            <div class="timeout-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.5rem;">Sesi Hampir Tamat</h2>
+            <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+                Anda telah tidak aktif untuk seketika. Sesi anda akan ditamatkan dalam:
+            </p>
+            <div style="font-size: 2.5rem; font-weight: 800; color: #ef4444; margin: 15px 0;" id="timeout-countdown">30
+            </div>
+
+            <div class="timeout-progress-container">
+                <div id="timeout-progress" class="timeout-progress-bar"></div>
+            </div>
+
+            <button class="btn-stay" id="btn-stay-logged-in">Teruskan Sesi Saya</button>
+        </div>
+    </div>
+
+    <!-- Profile Settings Modal -->
+    <div id="profile-modal" class="modal"
+        style="display: none; position: fixed; z-index: 4000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.6); justify-content: center; align-items: center;">
+        <div class="modal-content"
+            style="background-color: #fff; border-radius: 12px; width: 90%; max-width: 450px; box-shadow: 0 8px 30px rgba(0,0,0,0.2); overflow: hidden;">
+            <div
+                style="padding: 20px; background: linear-gradient(135deg, #2c3e50, #34495e); color: white; display: flex; justify-content: space-between; align-items: center;">
+                <h3 style="margin: 0;"><i class="fas fa-user-cog"></i> Profil Syarikat</h3>
+                <span onclick="closeProfileModal()" style="font-size: 24px; cursor: pointer;">&times;</span>
+            </div>
+            <form id="form-update-profile" style="padding: 25px;">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Nama
+                        Syarikat <small style="font-weight: normal; color: #7f8c8d;">(Hubungi HQ untuk
+                            tukar)</small></label>
+                    <input type="text" id="profile-name" readonly
+                        style="width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 6px; box-sizing: border-box; background: #fafafa; cursor: not-allowed; color: #7f8c8d;">
+                </div>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label id="label-position"
+                        style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Bidang Tugas
+                        (Skop) <small style="font-weight: normal; color: #7f8c8d;">(Hubungi HQ untuk
+                            tukar)</small></label>
+                    <input type="text" id="profile-position" readonly
+                        style="width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 6px; box-sizing: border-box; background: #fafafa; cursor: not-allowed; color: #7f8c8d;">
+                </div>
+                <div style="display: flex; gap: 15px; margin-bottom: 15px;">
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">No. Tel
+                            Pejabat <small style="font-weight: normal; color: #7f8c8d;">(Hubungi HQ untuk
+                                tukar)</small></label>
+                        <input type="tel" id="profile-offphone" readonly
+                            style="width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 6px; box-sizing: border-box; background: #fafafa; cursor: not-allowed; color: #7f8c8d;">
+                    </div>
+                    <div style="flex: 1;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">No. Tel
+                            Bimbit <small style="font-weight: normal; color: #7f8c8d;">(Hubungi HQ untuk
+                                tukar)</small></label>
+                        <input type="tel" id="profile-mobile" readonly
+                            style="width: 100%; padding: 10px; border: 1px solid #eee; border-radius: 6px; box-sizing: border-box; background: #fafafa; cursor: not-allowed; color: #7f8c8d;">
+                    </div>
+                </div>
+
+                <hr style="margin: 20px 0; border: none; border-top: 1px solid #eee;">
+
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; font-weight: bold; color: #34495e;">Tukar Kata
+                        Laluan (Kosongkan jika tidak mahu tukar)</label>
+                    <div class="password-field-container" style="position: relative;">
+                        <input type="password" id="profile-password" placeholder="••••••••" autocomplete="new-password"
+                            style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; padding-right: 40px;">
+                        <i class="fas fa-eye"
+                            style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #7f8c8d;"
+                            onclick="toggleRegPassword('profile-password', this)"></i>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="button" onclick="closeProfileModal()"
+                        style="flex: 1; padding: 12px; background: #95a5a6; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: background 0.2s;">Batal</button>
+                    <button type="submit"
+                        style="flex: 1; padding: 12px; background: #3498db; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; transition: all 0.2s;">Simpan
+                        Perubahan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Profile Settings Logic -->
+    <script type="module">
+        import { auth } from './firebase-config.js';
+        import { updatePassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        window.openProfileModal = function () {
+            const userEmail = localStorage.getItem('contractorEmail');
+            if (!userEmail) return;
+
+            // 1. Show modal immediately
+            document.getElementById('profile-modal').style.display = 'flex';
+
+            // 2. Population logic (Background fetch or Cache)
+            const fillFields = (contractors) => {
+                const me = contractors.find(c => (c.email || '').toLowerCase() === userEmail.toLowerCase());
+                if (me) {
+                    document.getElementById('profile-name').value = me.name || '';
+                    document.getElementById('profile-position').value = me.scope || '';
+                    document.getElementById('profile-offphone').value = me.offphone || '';
+                    document.getElementById('profile-mobile').value = me.mobile || '';
+                }
+            };
+
+            // Immediate population from cache if possible
+            if (window.allContractors) fillFields(window.allContractors);
+
+            // Fetch in background to sync
+            API.getAll().then(data => {
+                window.allContractors = data.contractors || [];
+                fillFields(window.allContractors);
+            }).catch(e => console.warn("Profile sync error", e));
+        };
+
+        window.closeProfileModal = function () {
+            document.getElementById('profile-modal').style.display = 'none';
+            const form = document.getElementById('form-update-profile');
+            if (form) form.reset();
+        };
+
+        const updateProfileForm = document.getElementById('form-update-profile');
+        if (updateProfileForm) {
+            updateProfileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const userEmail = localStorage.getItem('contractorEmail');
+                const newPassword = document.getElementById('profile-password').value.trim();
+
+                // UI Feedback
+                const btn = updateProfileForm.querySelector('button[type="submit"]');
+                const originalText = btn.innerHTML;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Menyimpan...';
+                btn.disabled = true;
+
+                try {
+                    // Check if password change is actually requested since all other fields are read-only
+                    if (!newPassword) {
+                        alert("Sila isi ruangan kata laluan jika ingin menukar kata laluan.");
+                        btn.innerHTML = originalText;
+                        btn.disabled = false;
+                        return;
+                    }
+
+                    // 1. Update Firebase Password 
+                    if (newPassword.length < 6) {
+                        throw new Error("Kata laluan mestilah sekurang-kurangnya 6 aksara.");
+                    }
+                    const user = auth.currentUser;
+                    if (user) {
+                        await updatePassword(user, newPassword);
+                    } else {
+                        throw new Error("Sesi pengguna tidak ditemui. Sila log masuk semula.");
+                    }
+
+                    // Success Animation on Button
+                    btn.innerHTML = '<i class="fas fa-check-circle"></i> Berjaya Dikemaskini';
+                    btn.style.background = '#27ae60';
+
+                    setTimeout(() => {
+                        closeProfileModal();
+                        // Reset if opened again later
+                        btn.innerHTML = originalText;
+                        btn.style.background = '#3498db';
+                    }, 1500);
+                } catch (err) {
+                    console.error("Profile Change Error:", err);
+                    if (err.code === 'auth/requires-recent-login') {
+                        alert("Untuk keselamatan, sila log keluar dan log masuk semula sebelum menukar kata laluan.");
+                    } else {
+                        alert("Ralat: " + (err.message || "Gagal mengemaskini profil."));
+                    }
+                } finally {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+            });
+        }
+    </script>
+    <!-- Timeout Warning Modal -->
+    <div id="timeout-warning-modal" class="timeout-overlay">
+        <div class="timeout-card">
+            <div class="timeout-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <h2 style="margin: 0 0 10px 0; color: #1e293b; font-size: 1.5rem;">Sesi Hampir Tamat</h2>
+            <p style="margin: 0; color: #64748b; font-size: 0.95rem; line-height: 1.5;">
+                Anda telah tidak aktif. Sesi akaun akan ditamatkan dalam:
+            </p>
+            <div style="font-size: 2.5rem; font-weight: 800; color: #ef4444; margin: 15px 0;" id="timeout-countdown">30
+            </div>
+
+            <div class="timeout-progress-container">
+                <div id="timeout-progress" class="timeout-progress-bar"></div>
+            </div>
+
+            <button class="btn-stay" id="btn-stay-logged-in">Teruskan Sesi Saya</button>
+        </div>
+    </div>
 </body>
+
+
 
 </html>

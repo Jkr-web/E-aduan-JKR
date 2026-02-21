@@ -141,6 +141,64 @@ document.addEventListener('DOMContentLoaded', function () {
     // Default logged in from Login session
     initContractorApp();
 
+    // --- IDLE TIMEOUT TRACKER (Animated & Dynamic) ---
+    (function initIdleTracker() {
+        let idleTime = 0;
+
+        if (!userRole) return;
+
+        const modal = document.getElementById('timeout-warning-modal');
+        const countdownEl = document.getElementById('timeout-countdown');
+        const progressEl = document.getElementById('timeout-progress');
+        const stayBtn = document.getElementById('btn-stay-logged-in');
+
+        function resetTimer() {
+            idleTime = 0;
+            if (modal && modal.style.display === 'flex') {
+                modal.style.display = 'none';
+            }
+        }
+
+        if (stayBtn) stayBtn.onclick = resetTimer;
+
+        const interval = setInterval(() => {
+            idleTime++;
+
+            // Dynamic read to apply settings immediately after save
+            const idleTimeout = parseInt(localStorage.getItem('idleTimeout') || '300');
+            const warningThreshold = idleTimeout > 60 ? 30 : Math.floor(idleTimeout / 3);
+
+            // 1. Warning Phase
+            const timeRemaining = idleTimeout - idleTime;
+            if (timeRemaining <= warningThreshold && timeRemaining > 0) {
+                if (modal && modal.style.display !== 'flex') {
+                    modal.style.display = 'flex';
+                }
+                if (countdownEl) countdownEl.textContent = timeRemaining;
+                if (progressEl) {
+                    const percent = (timeRemaining / warningThreshold) * 100;
+                    progressEl.style.width = percent + '%';
+                }
+            } else if (timeRemaining > warningThreshold) {
+                if (modal && modal.style.display === 'flex') modal.style.display = 'none';
+            }
+
+            // 2. Logout Phase
+            if (idleTime >= idleTimeout && idleTimeout >= 10) {
+                clearInterval(interval);
+                localStorage.removeItem('userRole');
+                localStorage.removeItem('userName');
+                localStorage.removeItem('contractorEmail');
+                localStorage.removeItem('activeContractorTab');
+                window.location.href = 'index.html?timeout=true';
+            }
+        }, 1000);
+
+        ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart'].forEach(evt => {
+            document.addEventListener(evt, resetTimer, true);
+        });
+    })();
+
     // --- Sound Settings for Contractor ---
     window.notifSettings = {
         sound: 'chime', // Default for contractor
@@ -238,6 +296,7 @@ document.addEventListener('DOMContentLoaded', function () {
             e.preventDefault();
             localStorage.removeItem('userRole');
             localStorage.removeItem('userName');
+            localStorage.removeItem('activeContractorTab'); // Reset to dashboard for next login
             window.location.href = 'index.html';
         });
     }
@@ -1568,3 +1627,18 @@ function formatDisplayDate(dateStr) {
         return dateStr;
     }
 }
+
+// --- UTILITY ---
+window.toggleRegPassword = function (inputId, icon) {
+    const input = document.getElementById(inputId);
+    if (!input) return;
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.remove('fa-eye');
+        icon.classList.add('fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.remove('fa-eye-slash');
+        icon.classList.add('fa-eye');
+    }
+};

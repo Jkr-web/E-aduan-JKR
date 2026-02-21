@@ -184,8 +184,20 @@ body {
     border-radius: 16px;
     border: 1px solid rgba(255, 255, 255, 0.05);
     color: var(--white);
-    transition: all 0.3s;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
+    cursor: pointer;
+    position: relative;
+}
+
+.user-profile:hover {
+    background: rgba(255, 255, 255, 0.15);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+}
+
+.user-profile:active {
+    transform: scale(0.98);
 }
 
 .sidebar.collapsed .user-profile {
@@ -399,7 +411,7 @@ button {
     width: 100%;
     height: 100%;
     background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(8px);
+    /* backdrop-filter: blur(8px); Removed due to browser clipping/layering issues on forms */
     display: none;
     justify-content: center;
     align-items: center;
@@ -695,7 +707,7 @@ button {
         display: none;
         z-index: 1999;
         cursor: pointer;
-        backdrop-filter: blur(4px);
+        /* backdrop-filter: blur(4px); Removed to prevent rendering bugs */
     }
 
     .overlay.active {
@@ -1037,4 +1049,106 @@ button {
     font-size: 0.85rem;
     font-weight: 500;
     border-top: 1px solid #f1f5f9;
+}
+
+/* --- TIMEOUT MODAL ANIMATIONS --- */
+.timeout-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.8);
+    /* backdrop-filter: blur(8px); */
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    animation: fadeIn 0.4s ease;
+}
+
+.timeout-card {
+    background: white;
+    width: 90%;
+    max-width: 400px;
+    padding: 30px;
+    border-radius: 20px;
+    text-align: center;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    transform: scale(0.9);
+    animation: scaleUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes scaleUp {
+    to {
+        transform: scale(1);
+    }
+}
+
+.timeout-icon {
+    font-size: 3rem;
+    color: #f59e0b;
+    margin-bottom: 20px;
+    animation: pulseWarn 1.5s infinite;
+}
+
+@keyframes pulseWarn {
+    0% {
+        transform: scale(1);
+        text-shadow: 0 0 0 rgba(245, 158, 11, 0);
+    }
+
+    50% {
+        transform: scale(1.1);
+        text-shadow: 0 0 20px rgba(245, 158, 11, 0.5);
+    }
+
+    100% {
+        transform: scale(1);
+        text-shadow: 0 0 0 rgba(245, 158, 11, 0);
+    }
+}
+
+.timeout-progress-container {
+    width: 100%;
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 10px;
+    margin: 20px 0;
+    overflow: hidden;
+}
+
+.timeout-progress-bar {
+    height: 100%;
+    background: linear-gradient(90deg, #f59e0b, #ef4444);
+    width: 100%;
+    transition: width 1s linear;
+}
+
+.btn-stay {
+    width: 100%;
+    padding: 12px;
+    background: #2563eb;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-stay:hover {
+    background: #1d4ed8;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
 }
