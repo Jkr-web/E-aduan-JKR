@@ -893,3 +893,8 @@ button {
     box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15) !important;
     border-color: #f1c40f !important;
 }
+
+/* Fix SweetAlert2 z-index to appear above the progress modal which has z-index: 2200 */
+.swal2-container {
+    z-index: 9999 !important;
+}

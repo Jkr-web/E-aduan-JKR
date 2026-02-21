@@ -455,13 +455,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
                         <!-- RIGHT SIDE: Status Badge Only if Verified -->
                         <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
-                            ${c.isVerified ? `
+                            ${(c.isVerified === true || String(c.isVerified).toUpperCase() === 'TRUE' || c.isverified === true || String(c.isverified).toUpperCase() === 'TRUE' || c.isVerified === 'VERIFIED') ? `
                                 <div style="display: flex; flex-direction: column; align-items: flex-end;">
                                     <div style="background: #2ecc71; color: #000; padding: 6px 12px; border-radius: 4px; font-weight: 800; font-size: 11px; display: flex; align-items: center; gap: 6px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                                         <i class="fas fa-check-circle" style="font-size: 14px;"></i> TELAH DISAHKAN OLEH ADMIN
                                     </div>
                                     <div style="font-size: 10px; color: #7f8c8d; margin-top: 4px; font-weight: 600;">
-                                        Disahkan pada: ${new Date(c.verifiedDate).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true })}
+                                        Disahkan pada: ${c.verifiedDate || c.verifieddate ? new Date(c.verifiedDate || c.verifieddate).toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true }) : '-'}
                                     </div>
                                 </div>
                             ` : ''}
@@ -813,7 +813,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (modalTitle) modalTitle.innerHTML = '<i class="fas fa-check-double" style="color:#27ae60;"></i> Aduan Telah Disahkan (Selesai)';
             } else {
                 // Update Assign Button Text if not verified
-                if (complaint.contractor) {
+                if (complaint['kontraktor dilantik'] || complaint.contractor) {
                     assignBtn.innerHTML = '<i class="fas fa-edit"></i> Edit Kontraktor';
                     assignBtn.style.backgroundColor = '#f39c12';
                 } else {
@@ -822,7 +822,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 // Disable 'Lantik/Edit Kontraktor' if already started by contractor
-                if (complaint.status === 'Sedang Dibaiki Oleh Kontraktor') {
+                if (complaint.status === 'Sedang Dibaiki Oleh Kontraktor' || complaint.status === 'Dalam Proses' || complaint.status === 'Selesai') {
                     assignBtn.disabled = true;
                     assignBtn.style.opacity = '0.5';
                     assignBtn.style.cursor = 'not-allowed';
@@ -1852,17 +1852,19 @@ window.viewProgress = async function (id) {
     try {
         const progress = complaint.progress || {};
 
+        const complaintId = complaint['no. aduan'] || complaint.id || '-';
+
         // Build HTML for progress
         let html = `
             <div style="background: white; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #3498db; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                 <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                     <div>
-                        <h4 style="margin: 0; color: #2c3e50;">Aduan #${complaint.id}</h4>
-                        <p style="margin: 5px 0; font-size: 13px; color: #7f8c8d;"><i class="fas fa-hard-hat"></i> Kontraktor: <strong>${complaint.contractor || '-'}</strong></p>
+                        <h4 style="margin: 0; color: #2c3e50;">Aduan #${complaintId}</h4>
+                        <p style="margin: 5px 0; font-size: 13px; color: #7f8c8d;"><i class="fas fa-hard-hat"></i> Kontraktor: <strong>${complaint['kontraktor dilantik'] || complaint.contractor || '-'}</strong></p>
                     </div>
                     <div style="text-align: right;">
-                        <span style="font-size: 12px; color: #7f8c8d;"><i class="fas fa-calendar"></i> Dimulakan: ${complaint.dateReceived ? new Date(complaint.dateReceived).toLocaleString('ms-MY') : '-'}</span><br>
-                        <span style="font-size: 12px; color: #7f8c8d;"><i class="fas fa-clock"></i> Tempoh: ${complaint.duration || '-'}</span>
+                        <span style="font-size: 12px; color: #7f8c8d;"><i class="fas fa-calendar"></i> Dimulakan: ${complaint['tarikh terima'] || complaint.dateReceived ? new Date(complaint['tarikh terima'] || complaint.dateReceived).toLocaleString('ms-MY') : '-'}</span><br>
+                        <span style="font-size: 12px; color: #7f8c8d;"><i class="fas fa-clock"></i> Tempoh: ${complaint['tempoh siap'] || complaint.duration || '-'}</span>
                     </div>
                 </div>
             </div>
@@ -1915,9 +1917,9 @@ window.viewProgress = async function (id) {
             <div style="margin-top: 30px; padding: 25px; background: #f0f7f4; border: 2px dashed #27ae60; border-radius: 12px; text-align: center;">
                 <h4 style="margin: 0 0 10px 0; color: #27ae60; text-transform: uppercase; letter-spacing: 1px;">Pengesahan Admin</h4>
                 
-                ${complaint.isVerified ? `
+                ${(complaint.isVerified === true || String(complaint.isVerified).toUpperCase() === 'TRUE' || complaint.isverified === true || String(complaint.isverified).toUpperCase() === 'TRUE' || complaint.isVerified === 'VERIFIED') ? `
                     <div style="background: #27ae60; color: white; padding: 15px; border-radius: 8px; font-weight: 700; display: inline-flex; align-items: center; gap: 10px;">
-                        <i class="fas fa-check-double" style="font-size: 1.5em;"></i> TUGASAN INI TELAH DISAHKAN PADA ${new Date(complaint.verifiedDate).toLocaleString('ms-MY')}
+                        <i class="fas fa-check-double" style="font-size: 1.5em;"></i> TUGASAN INI TELAH DISAHKAN PADA ${complaint.verifiedDate || complaint.verifieddate ? new Date(complaint.verifiedDate || complaint.verifieddate).toLocaleString('ms-MY') : '-'}
                     </div>
                 ` : (complaint.status === 'Selesai' || (progress && progress.after && progress.after.images && progress.after.images.length > 0)) ? `
                     <p style="color: #2c3e50; font-size: 15px; margin-bottom: 20px; font-weight: 500;">
@@ -1925,10 +1927,10 @@ window.viewProgress = async function (id) {
                     </p>
                     <div style="display: flex; flex-direction: column; align-items: center; gap: 15px;">
                         <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; background: white; padding: 10px 20px; border-radius: 25px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border: 1px solid #d4efdf;">
-                            <input type="checkbox" id="verify-check-${complaint.id}" style="width: 18px; height: 18px; cursor: pointer;"> 
+                            <input type="checkbox" id="verify-check-${complaintId}" style="width: 18px; height: 18px; cursor: pointer;"> 
                             <span style="font-size: 14px; color: #27ae60; font-weight: 600;">Klik untuk setuju dengan pengesahan ini</span>
                         </label>
-                        <button onclick="verifyTask('${complaint.id}')" style="padding: 12px 40px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); transition: all 0.2s;">
+                        <button onclick="verifyTask('${complaintId}')" style="padding: 12px 40px; background: #27ae60; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700; box-shadow: 0 4px 15px rgba(39, 174, 96, 0.3); transition: all 0.2s;">
                             <i class="fas fa-check-circle"></i> SAHKAN SEKARANG
                         </button>
                     </div>
@@ -1959,12 +1961,34 @@ window.verifyTask = async function (id) {
     if (!check) return;
 
     if (!check.checked) {
-        alert("Sila klik pada petak pengesahan ('checkbox') sebelum menekan butang Sahkan.");
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'warning',
+                title: 'Amaran',
+                text: 'Sila klik pada petak pengesahan ("checkbox") sebelum menekan butang Sahkan.',
+                confirmButtonColor: '#f39c12'
+            });
+        } else {
+            alert("Sila klik pada petak pengesahan ('checkbox') sebelum menekan butang Sahkan.");
+        }
         return;
     }
 
-    if (!confirm("Adakah anda pasti mahu mengesahkan tugasan ini sebagai Selesai Sepenuhnya?")) {
-        return;
+    if (typeof Swal !== 'undefined') {
+        const confirmResult = await Swal.fire({
+            title: 'Pengesahan Tugasan',
+            text: "Adakah anda pasti mahu mengesahkan tugasan ini sebagai Selesai Sepenuhnya?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#27ae60',
+            cancelButtonColor: '#e74c3c',
+            confirmButtonText: 'Ya, Sahkan!',
+            cancelButtonText: 'Batal'
+        });
+
+        if (!confirmResult.isConfirmed) return;
+    } else {
+        if (!confirm("Adakah anda pasti mahu mengesahkan tugasan ini sebagai Selesai Sepenuhnya?")) return;
     }
 
     try {
@@ -1978,22 +2002,27 @@ window.verifyTask = async function (id) {
 
         const verifiedDate = new Date().toISOString();
         const complaints = window.allComplaints || [];
-        const index = complaints.findIndex(c => c.id == id);
+        const index = complaints.findIndex(c => (c['no. aduan'] || c.id) == id);
 
         if (index === -1) throw new Error("Aduan tidak dijumpai dalam senarai.");
 
         // Get the current complaint data
         const currentComplaint = { ...complaints[index] };
+
+        // Use consistent keys for saving. 
+        // We set both forms just in case there's an existing column with different casing.
         currentComplaint.isVerified = true;
+        currentComplaint.isverified = true;
         currentComplaint.verifiedDate = verifiedDate;
+        currentComplaint.verifieddate = verifiedDate;
 
         // Ensure status is also updated to 'Selesai' if not already
         if (currentComplaint.status !== 'Selesai') {
             currentComplaint.status = 'Selesai';
         }
 
-        // 1. Update Server
-        const success = await API.updateRecord('Aduan', 'id', id, currentComplaint);
+        // 1. Update Server - Must use correct column name as key
+        const success = await API.updateRecord('Aduan', 'no. aduan', id, currentComplaint);
 
         if (!success) throw new Error("Gagal mengemaskini data di pelayan.");
 
@@ -2001,7 +2030,18 @@ window.verifyTask = async function (id) {
         complaints[index] = currentComplaint;
         window.allComplaints = complaints;
 
-        alert("Tugasan telah berjaya disahkan.");
+        // 3. SUCCESS ANIMATION
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'success',
+                title: 'Berjaya Disahkan',
+                text: 'Tugasan telah disahkan dan direkodkan dengan jayanya!',
+                confirmButtonColor: '#27ae60',
+                timer: 3000
+            });
+        } else {
+            alert("Tugasan telah berjaya disahkan.");
+        }
 
         // 4. Notify User/Stakeholder (Task Verified)
         const baseUrl = window.location.origin + window.location.pathname.replace('main.html', '');
@@ -2021,7 +2061,16 @@ window.verifyTask = async function (id) {
 
     } catch (err) {
         console.error("Verification Error:", err);
-        alert("Ralat: " + err.message);
+        if (typeof Swal !== 'undefined') {
+            Swal.fire({
+                icon: 'error',
+                title: 'Ralat',
+                text: err.message,
+                confirmButtonColor: '#e74c3c'
+            });
+        } else {
+            alert("Ralat: " + err.message);
+        }
 
         // Reset button
         const btn = document.querySelector(`button[onclick="verifyTask('${id}')"]`);

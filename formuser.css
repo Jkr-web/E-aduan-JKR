@@ -327,22 +327,28 @@ svg.smile-anim {
 }
 
 /* Responsive Media Queries */
-@media screen and (max-width: 480px) {
+@media screen and (max-width: 600px) {
     body {
-        padding: 10px;
+        padding: 0;
+        background-color: #fff;
     }
 
     .container {
-        padding: 20px;
+        padding: 25px 20px;
+        box-shadow: none;
+        border-radius: 0;
+        max-width: 100%;
+        width: 100%;
+        box-sizing: border-box;
     }
 
     h1 {
-        font-size: 20px;
+        font-size: 22px;
     }
 
     .form-row {
         flex-direction: column;
-        gap: 0;
+        gap: 10px;
     }
 
     .button-group {
