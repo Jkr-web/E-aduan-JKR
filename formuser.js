@@ -346,6 +346,11 @@ window.renderComplaintForm = function (containerId) {
                         description: newComplaint["keterangan aduan"]
                     });
 
+                    // Send Telegram Alert to Admin Group
+                    const loginLink = "https://jkr-web.github.io/E-aduan-JKR/index.html";
+                    const telegramMsg = `🚨 *ADUAN BARU DITERIMA*\n\n*ID Aduan:* ${newId}\n*Pengadu:* ${newComplaint["nama"]}\n*No. Tel:* ${newComplaint["no. telefon"].replace(/'/g, '')}\n*Lokasi:* ${newComplaint["lokasi kerosakan"]}\n*Kerosakan:* ${newComplaint["keterangan aduan"]}\n\n👉 [Log Masuk Admin](${loginLink})`;
+                    API.sendTelegramToAdmin(telegramMsg);
+
                     // Hide overlay if it was shown
                     if (hasFiles && overlay) {
                         overlay.style.opacity = '0';

@@ -4,6 +4,14 @@ const API_URL = 'https://script.google.com/macros/s/AKfycbzlmcR6XK3QGWXaCzlV8O7O
 // --- TOKEN KESELAMATAN (Mesti sama dengan di Google Apps Script) ---
 const AUTH_TOKEN = "https://github.com/Jkr-web/E-aduan-JKR";
 
+// --- TELEGRAM BOT CONFIGURATION ---
+// Sila masukkan Token Bot dan Chat ID setiap Admin di dalam kurungan (Array)
+const TELEGRAM_BOT_TOKEN = "8388825695:AAFeMMNXRCG08Cso69D36uUt_MISzbwh0J4";
+const TELEGRAM_ADMIN_CHAT_IDS = [
+    "YOUR_CHAT_ID_ADMIN_1",
+    // "YOUR_CHAT_ID_ADMIN_2" // Boleh tambah beratus Chat ID di bawah ini jika mahu
+];
+
 const API = {
     async getAll(useCache = false) {
         // 1. Return cache if requested (for instant load)
@@ -160,6 +168,71 @@ const API = {
             console.error("Notification Error:", e);
             return false;
         }
+    },
+
+    /**
+     * @param {string} message - Message to send to the Individual Admins
+     */
+    async sendTelegramToAdmin(message) {
+        if (!TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN.includes('YOUR_BOT_TOKEN')) {
+            console.warn("Telegram Token belum ditetapkan.");
+            return false;
+        }
+
+        let chatIds = [...TELEGRAM_ADMIN_CHAT_IDS].filter(id => id && !id.includes('YOUR_CHAT_ID'));
+
+        // Ambil data admin dari server untuk dapatkan Chat ID masing-masing
+        try {
+            const data = await this.getAll(false); // Ambil data fresh untuk notifikasi
+            const admins = data.admins || [];
+
+            admins.forEach(admin => {
+                if (admin.telegramId) {
+                    const tid = admin.telegramId.toString().trim();
+                    if (tid !== '') {
+                        // Masukkan ke dalam senarai jika belum ada
+                        if (!chatIds.includes(tid)) {
+                            chatIds.push(tid);
+                        }
+                    }
+                }
+            });
+        } catch (e) {
+            console.warn("Gagal mengekstrak Chat ID Admin dari pangkalan data:", e);
+        }
+
+        if (chatIds.length === 0) {
+            console.warn("Tiada Chat ID Telegram Admin dijumpai untuk dihantar notifikasi.");
+            return false;
+        }
+
+        let allSuccess = true;
+
+        for (const chatId of chatIds) {
+            try {
+                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+                const payload = {
+                    chat_id: chatId.toString().trim(),
+                    text: message,
+                    parse_mode: 'Markdown'
+                };
+
+                const res = await fetch(url, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!res.ok) {
+                    console.error(`Gagal hantar Telegram ke Chat ID: ${chatId}`);
+                    allSuccess = false;
+                }
+            } catch (error) {
+                console.error(`Error sending Telegram to Chat ID ${chatId}:`, error);
+                allSuccess = false;
+            }
+        }
+        return allSuccess;
     },
 
     /**
@@ -349,6 +422,7 @@ const normalizeData = (data) => {
                 if (k === 'tarikh terima' || k === 'masa terima') jsKey = 'dateReceived';
                 if (k === 'tarikh siap' || k === 'masa siap') jsKey = 'dateCompleted';
                 if (k === 'tempoh' || k === 'tempoh siap') jsKey = 'duration';
+                if (k === 'assignedby' || k === 'ditetapkan oleh' || k === 'pegawai') jsKey = 'assignedBy';
 
                 // Contractor Specific Fields
                 if (k === 'no. daftar' || k === 'no. pendaftaran' || k === 'regno' || k === 'ssm') jsKey = 'regNo';
@@ -358,6 +432,7 @@ const normalizeData = (data) => {
                 if (k === 'no. tel bimbit' || k === 'tel bimbit' || k === 'no telefon bimbit') jsKey = 'mobile';
                 if (k === 'bidang' || k === 'skop') jsKey = 'scope';
                 if (k === 'dijana oleh' || k === 'createdby') jsKey = 'createdBy';
+                if (k === 'telegramid' || k === 'telegram id' || k === 'telegram_id') jsKey = 'telegramId';
 
                 let val = item[key];
                 // Normalize dates for HTML date inputs (YYYY-MM-DD)
@@ -371,6 +446,16 @@ const normalizeData = (data) => {
                         } catch (e) { }
                     }
                 }
+
+                // Handle stringified objects from Sheets (Check both forms due to mapping)
+                if ((jsKey === 'assignedBy' || jsKey === 'assignedby') && typeof val === 'string' && val.trim().startsWith('{')) {
+                    try {
+                        val = JSON.parse(val);
+                    } catch (e) {
+                        console.warn('Failed to parse assignedBy JSON:', e);
+                    }
+                }
+
                 normalizedItem[jsKey] = val;
             }
             list[index] = normalizedItem;
@@ -459,7 +544,13 @@ const prepareDataForSave = (jsData) => {
 
         // 2. Fallback to predefined mapping or the key itself
         const header = sheetHeader || REVERSE_MAP[jsKey] || jsKey;
-        spreadsheetData[header] = result[jsKey];
+
+        // Ensure objects like 'assignedBy' are stringified before saving to Google Sheets
+        if (jsKey === 'assignedBy' && typeof result[jsKey] === 'object' && result[jsKey] !== null) {
+            spreadsheetData[header] = JSON.stringify(result[jsKey]);
+        } else {
+            spreadsheetData[header] = result[jsKey];
+        }
     }
 
     return spreadsheetData;

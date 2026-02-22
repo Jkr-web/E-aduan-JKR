@@ -654,12 +654,32 @@ function renderTaskTable(tasks) {
                     <div>
                         <small style="color: #95a5a6; text-transform: uppercase; font-weight: 700; font-size: 10px;">Pegawai & Tarikh Tugas</small>
                         <p style="margin: 5px 0 0 0; color: #d35400; font-weight: 600; font-size: 0.9rem;">
-                            <i class="fas fa-user-tie"></i> ${task.assignedBy ? task.assignedBy.name : (task.adminName || 'Admin JKR')}
+                            <i class="fas fa-user-tie"></i> ${(() => {
+                let adminData = task.assignedBy;
+                if (typeof adminData === 'string' && adminData.trim().startsWith('{')) {
+                    try { adminData = JSON.parse(adminData); } catch (e) { }
+                }
+                if (adminData && typeof adminData === 'object' && adminData.name) {
+                    return adminData.name;
+                } else if (typeof adminData === 'string' && adminData.trim() !== '' && adminData !== '[object Object]') {
+                    return adminData;
+                }
+                return task.adminName || 'Admin JKR';
+            })()}
                         </p>
                         <p style="margin: 2px 0 0 0; color: #2c3e50; font-weight: 700; font-size: 0.85rem;">
                             <i class="far fa-calendar-alt"></i> Diberi: ${formatDisplayDate(task['tarikh lantikan'] || task.assignedDate)}
                         </p>
-                        ${task.assignedBy ? `<small style="color: #666;">${task.assignedBy.position} | ${task.assignedBy.phone}</small>` : '<small style="color: #666;">Maklumat tambahan tidak tersedia</small>'}
+                        ${(() => {
+                let adminData = task.assignedBy;
+                if (typeof adminData === 'string' && adminData.trim().startsWith('{')) {
+                    try { adminData = JSON.parse(adminData); } catch (e) { }
+                }
+                if (adminData && typeof adminData === 'object' && (adminData.position || adminData.phone)) {
+                    return `<small style="color: #666;">${adminData.position || '-'} | ${adminData.phone || '-'}</small>`;
+                }
+                return '<small style="color: #666;">Maklumat tambahan tidak tersedia</small>';
+            })()}
                     </div>
                 </div>
             </div>
@@ -725,6 +745,17 @@ window.clockIn = async function (id) {
             complaints[index]['tarikh terima'] = `${d} ${t}`; // Record Start Date-Time
 
             await API.updateRecord('Aduan', 'no. aduan', id, complaints[index]);
+
+            // Send Telegram Alert to Admin
+            try {
+                const contractorName = localStorage.getItem('userName') || 'Kontraktor';
+                const location = complaints[index].location || complaints[index]['lokasi kerosakan'] || '-';
+                const loginLink = "https://jkr-web.github.io/E-aduan-JKR/index.html";
+                const telegramMsg = `🛠️ *KONTRAKTOR MULA KERJA (Clock-In)*\n\n*ID Aduan:* ${id}\n*Kontraktor:* ${contractorName}\n*Masa:* ${d} ${t}\n*Lokasi:* ${location}\n\nKontraktor Kini Akan Memulakan Kerja.\n\n👉 [Pautan Pantas Admin](${loginLink})`;
+                API.sendTelegramToAdmin(telegramMsg);
+            } catch (tErr) {
+                console.warn("Gagal hantar notifikasi Telegram (Clock-In):", tErr);
+            }
 
             // Animate button to success state
             if (clickedBtn) {
@@ -1178,6 +1209,19 @@ window.submitProgress = async function (action) {
                         newStatus: 'Sedang Dibaiki Oleh Kontraktor',
                         updateBy: complaint['kontraktor dilantik'] || complaint.contractor
                     });
+
+                    // Send Telegram Alert to Admin (Modal Clock-In)
+                    try {
+                        const contractorName = localStorage.getItem('userName') || complaint['kontraktor dilantik'] || 'Kontraktor';
+                        const location = complaint.location || complaint['lokasi kerosakan'] || '-';
+                        const now = new Date();
+                        const dtS = now.toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
+                        const loginLink = "https://jkr-web.github.io/E-aduan-JKR/index.html";
+                        const telegramMsg = `🛠️ *KONTRAKTOR MULA KERJA (Clock-In)*\n\n*ID Aduan:* ${id}\n*Kontraktor:* ${contractorName}\n*Masa:* ${dtS}\n*Lokasi:* ${location}\n\nKontraktor Kini Akan Memulakan Kerja.\n\n👉 [Pautan Pantas Admin](${loginLink})`;
+                        API.sendTelegramToAdmin(telegramMsg);
+                    } catch (tErr) {
+                        console.warn("Gagal hantar notifikasi Telegram (Modal Clock-In):", tErr);
+                    }
                 } else if (action === 'complete') {
                     // 1. Notify User (Status Update)
                     API.sendNotification('status_update', {
@@ -1193,6 +1237,11 @@ window.submitProgress = async function (action) {
                         complaintId: id,
                         contractorName: complaint['kontraktor dilantik'] || complaint.contractor
                     });
+
+                    // 3. Send Telegram Alert to Admin
+                    const loginLink = "https://jkr-web.github.io/E-aduan-JKR/index.html";
+                    const telegramMsgComplete = `✅ *TUGASAN SELESAI (Menunggu Pengesahan)*\n\n*Kontraktor:* ${complaint['kontraktor dilantik'] || complaint.contractor}\n*No. Aduan:* ${id}\n*Tempoh Siap:* ${complaint['tempoh siap']}\n\n👉 [Pengesahan Admin](${loginLink})`;
+                    API.sendTelegramToAdmin(telegramMsgComplete);
                 }
 
                 alert(action === 'complete' ? `Tahniah! Tugasan ${id} telah diselesaikan.` : (action === 'clock-in' ? `Tugasan ${id} telah bermula (Clock-in).` : `Perkembangan tugasan ${id} dikemaskini.`));

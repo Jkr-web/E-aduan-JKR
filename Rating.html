@@ -185,6 +185,7 @@
         </div>
     </div>
 
+    <script src="client-api.js"></script>
     <script>
         let selectedRating = 0;
         const stars = document.querySelectorAll(".stars i");
@@ -301,6 +302,14 @@
 
                 document.body.appendChild(form);
                 form.submit();
+
+                // Hantar Telegram Alert kepada Admin
+                const ratingLabel = labels[selectedRating] || '-';
+                const telegramMsgRating = `🌟 *PENILAIAN BARU DARI PENGGUNA*\n\n*No. Aduan:* ${complaintId}\n*Bintang:* ${selectedRating}/5 (${ratingLabel})\n*Maklum Balas:* ${feedback ? feedback : 'Tiada komen'}\n\nSila log masuk ke portal Admin untuk melihat maklumat penuh.`;
+
+                if (typeof API !== 'undefined' && API.sendTelegramToAdmin) {
+                    API.sendTelegramToAdmin(telegramMsgRating);
+                }
 
                 // Tunggu sebentar untuk simulasi hantaran
                 setTimeout(() => {

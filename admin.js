@@ -527,6 +527,11 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <i class="fas fa-tasks"></i> Progress
                                 </button>
                             ` : ''}
+                            ${(c['kontraktor dilantik'] || c.contractor) ? `
+                                <button onclick="event.stopPropagation(); sendJobWhatsAppToContractor('${c['no. aduan'] || c.id}')" style="padding: 6px 10px; background: #25d366; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 5px;">
+                                    <i class="fab fa-whatsapp"></i> WhatsApp Kontraktor
+                                </button>
+                            ` : ''}
                             <button onclick="event.stopPropagation(); deleteComplaint('${c['no. aduan'] || c.id}')" style="padding: 6px 10px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
                                 <i class="fas fa-trash"></i> Padam
                             </button>
@@ -806,6 +811,16 @@ document.addEventListener('DOMContentLoaded', () => {
                     newStatus: 'Tindakan Kontraktor (Syarikat Dilantik)',
                     updateBy: 'Admin JKR'
                 });
+
+                // ✅ Send Telegram Alert to Admin Group
+                try {
+                    const loginLink = "https://jkr-web.github.io/E-aduan-JKR/index.html";
+                    const currentAdmin = localStorage.getItem('userName') || 'Admin';
+                    const telegramMsgAssign = `👷 *KONTRAKTOR DILANTIK*\n\n*ID Aduan:* ${id}\n*Kontraktor:* ${contractor}\n*Oleh Pegawai:* ${currentAdmin}\n*Lokasi:* ${complaints[index]['lokasi kerosakan'] || complaints[index].location}\n\nTugasan telah diserahkan kepada kontraktor untuk tindakan.\n\n👉 [Semak Portal](${loginLink})`;
+                    API.sendTelegramToAdmin(telegramMsgAssign);
+                } catch (tErr) {
+                    console.warn("Gagal hantar notifikasi Telegram (Assignment):", tErr);
+                }
 
                 // Close Modals
                 closeContractorModal();
@@ -1295,6 +1310,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const offphone = document.getElementById('reg-admin-offphone').value;
             const mobile = document.getElementById('reg-admin-mobile').value;
             const password = document.getElementById('reg-admin-password').value;
+            const telegramId = document.getElementById('reg-admin-telegram-id').value;
 
             if (!name || !username || !email || !position || !offphone || !password) {
                 alert("Sila isi semua maklumat mandatori.");
@@ -1336,7 +1352,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // 2. SAVE TO FIRESTORE (Create UID & Profile Mapping)
                 const firestoreProfile = {
-                    uid, name, email, role: 'admin', username,
+                    uid, name, email, role: 'admin', username, telegramId,
                     createdAt: new Date().toISOString()
                 };
                 await setDoc(doc(db, "users", uid), firestoreProfile);
@@ -1344,7 +1360,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 // 3. SAVE TO SHEETS (WITHOUT PASSWORD)
                 const newAdmin = {
-                    name, username, email, position, offphone: fOffPhone, mobile: fMobile, role: 'admin',
+                    name, username, email, position, offphone: fOffPhone, mobile: fMobile, role: 'admin', telegramId,
                     createdBy: localStorage.getItem('userName') || 'Admin'
                 };
 
@@ -1543,6 +1559,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('edit-admin-position').value = admin.position || '';
             document.getElementById('edit-admin-offphone').value = admin.offphone || '';
             document.getElementById('edit-admin-mobile').value = admin.mobile || '';
+            document.getElementById('edit-admin-telegram-id').value = admin.telegramId || '';
 
             document.getElementById('modal-edit-admin').style.display = 'flex';
         }
@@ -1570,9 +1587,27 @@ document.addEventListener('DOMContentLoaded', () => {
                     admins[index].position = document.getElementById('edit-admin-position').value;
                     admins[index].offphone = document.getElementById('edit-admin-offphone').value;
                     admins[index].mobile = document.getElementById('edit-admin-mobile').value;
+                    admins[index].telegramId = document.getElementById('edit-admin-telegram-id').value;
 
                     data.admins = admins;
                     await API.saveAll(data);
+
+                    // 2. SYNC FIRESTORE
+                    try {
+                        const q = query(collection(db, "users"), where("email", "==", oldEmail));
+                        const snapshot = await getDocs(q);
+                        snapshot.forEach(async (d) => {
+                            await setDoc(doc(db, "users", d.id), {
+                                name: admins[index].name,
+                                username: admins[index].username,
+                                email: admins[index].email, // update email too in case changed
+                                role: 'admin',
+                                telegramId: admins[index].telegramId
+                            }, { merge: true });
+                        });
+                    } catch (fsErr) {
+                        console.error("Firestore Admin Sync Fail:", fsErr);
+                    }
 
                     // Use Success Animation Modal
                     showSuccessModal(
@@ -1646,6 +1681,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('profile-position').value = me.position || '';
             document.getElementById('profile-offphone').value = me.offphone || '';
             document.getElementById('profile-mobile').value = me.mobile || '';
+            document.getElementById('profile-telegram-id').value = me.telegramId || '';
         }
 
         // 3. Optional: Sync in background without blocking UI
@@ -1657,6 +1693,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('profile-position').value = upToDate.position || '';
                 document.getElementById('profile-offphone').value = upToDate.offphone || '';
                 document.getElementById('profile-mobile').value = upToDate.mobile || '';
+                document.getElementById('profile-telegram-id').value = upToDate.telegramId || '';
             }
         }).catch(e => console.warn("Background profile sync failed", e));
     };
@@ -1689,6 +1726,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (index !== -1) {
                     admins[index].name = document.getElementById('profile-name').value;
                     admins[index].position = document.getElementById('profile-position').value;
+                    admins[index].telegramId = document.getElementById('profile-telegram-id').value;
 
                     // Normalize Phone Numbers (Prepend ' and ensure 0 for Sheets compatibility)
                     const formatPhoneForSheet = (val) => {
@@ -1701,6 +1739,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const success = await API.saveAll(data);
                     if (!success) throw new Error("Gagal menyimpan ke Sheets.");
+
+                    // ALSO UPDATE FIRESTORE FOR THIS PROFILE IF FOUND
+                    try {
+                        const q = query(collection(db, "users"), where("email", "==", admins[index].email));
+                        const snapshot = await getDocs(q);
+                        snapshot.forEach(async (d) => {
+                            await setDoc(doc(db, "users", d.id), {
+                                name: admins[index].name,
+                                telegramId: admins[index].telegramId
+                            }, { merge: true });
+                        });
+                    } catch (fsErr) {
+                        console.error("Firestore Profile Sync Fail:", fsErr);
+                    }
 
                     // Update LocalStorage Cache
                     localStorage.setItem('userName', admins[index].name);
@@ -3683,4 +3735,112 @@ window.sendRatingWhatsApp = function (id) {
 
     const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
     window.open(waUrl, '_blank');
+};
+
+/**
+ * Send WhatsApp Job Notification to Contractor
+ * @param {string} id - Complaint ID
+ */
+window.sendJobWhatsAppToContractor = function (id) {
+    const complaints = window.allComplaints || [];
+    const contractors = window.allContractors || [];
+
+    // Cari Rekod Aduan
+    const c = complaints.find(item => (item.id === id || item['no. aduan'] === id));
+    if (!c) {
+        alert("Data aduan tidak dijumpai.");
+        return;
+    }
+
+    const contractorName = c['kontraktor dilantik'] || c.contractor;
+    if (!contractorName) {
+        alert("Tiada syarikat dilantik untuk aduan ini.");
+        return;
+    }
+
+    // Cari Rekod Kontraktor
+    const comp = contractors.find(k => k.name === contractorName);
+    if (!comp) {
+        alert("Syarikat tidak dijumpai dalam pangkalan data.");
+        return;
+    }
+
+    // Guna nombor bimbit (mobile), kalau takde guna no pejabat
+    let phone = comp.mobile || comp.offphone;
+    if (!phone) {
+        alert("No. telefon kontraktor tidak dijumpai dalam rekod profail.");
+        return;
+    }
+
+    // Format phone number (Remove non-digits, ensure starts with 6 for Malaysia)
+    let formattedPhone = phone.replace(/\\D/g, '');
+    if (formattedPhone.startsWith('0')) {
+        formattedPhone = '6' + formattedPhone;
+    } else if (!formattedPhone.startsWith('6')) {
+        formattedPhone = '60' + formattedPhone;
+    }
+
+    const statusAduan = c.status || 'Baru';
+    const noRujukan = c['no. rujukan kontraktor'] || c.contractorRefNo || '-';
+    const lokasi = c['lokasi kerosakan'] || c.location || '-';
+    const kerosakan = c['keterangan aduan'] || c.description || '-';
+    const tugasan = c['keterangan tugasan'] || c.taskDescription || '-';
+
+    // Generate system URL links
+    const baseUrl = window.location.origin + window.location.pathname.replace(/main\.html/i, '').replace(/index\.html/i, '').replace(/\/$/, '') + '/';
+    const sysUrl = baseUrl + 'main.html';
+
+    const message = `*[🔴 TUGASAN BARU JKR]*
+
+Salam sejahtera *${contractorName}*,
+
+Satu tugasan penyelenggaraan baru telah diberikan kepada pihak tuan/puan. Sila ambil tindakan segera.
+
+*BUTIRAN TUGASAN:*
+🔹 *No. Rujukan:* ${noRujukan}
+🔹 *ID Aduan:* ${id}
+🔹 *Lokasi:* ${lokasi}
+🔹 *Kerosakan:* ${kerosakan}
+🔹 *Arahan Spesifik:* ${tugasan}
+
+Sila kemaskini status melalui Sistem E-Aduan JKR:
+${sysUrl}
+
+Terima kasih.`;
+
+    const waUrl = `https://wa.me/${formattedPhone}?text=${encodeURIComponent(message)}`;
+
+    // Popup Preview before opening WhatsApp
+    Swal.fire({
+        title: 'Preview Mesej WhatsApp',
+        html: `<div style="text-align: left; background: #f8f9fa; padding: 15px; border-radius: 8px; font-size: 13px; font-family: monospace; white-space: pre-wrap; border: 1px solid #ddd; max-height: 300px; overflow-y: auto; color: #333; line-height: 1.5; margin-bottom: 15px; font-weight: 500;">${message}</div>`,
+        icon: 'info',
+        showCancelButton: true,
+        showDenyButton: true,
+        confirmButtonColor: '#25d366', // WhatsApp Green
+        denyButtonColor: '#3498db',    // Blue
+        cancelButtonColor: '#95a5a6',  // Gray
+        confirmButtonText: '<i class="fab fa-whatsapp"></i> Buka WhatsApp',
+        denyButtonText: '<i class="fas fa-link"></i> Salin Link',
+        cancelButtonText: 'Batal',
+        customClass: {
+            htmlContainer: 'text-left'
+        }
+    }).then((result) => {
+        if (result.isConfirmed) {
+            window.open(waUrl, '_blank');
+        } else if (result.isDenied) {
+            navigator.clipboard.writeText(waUrl).then(() => {
+                Swal.fire({
+                    title: 'Berjaya Disalin!',
+                    text: 'Link WhatsApp telah disalin ke papan keratan (clipboard).',
+                    icon: 'success',
+                    timer: 2000,
+                    showConfirmButton: false
+                });
+            }).catch(() => {
+                alert("Gagal menyalin link: " + waUrl);
+            });
+        }
+    });
 };
