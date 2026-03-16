@@ -532,6 +532,9 @@ document.addEventListener('DOMContentLoaded', () => {
                                     <i class="fab fa-whatsapp"></i> WhatsApp Kontraktor
                                 </button>
                             ` : ''}
+                            <button onclick="event.stopPropagation(); printComplaint('${c['no. aduan'] || c.id}')" style="padding: 6px 10px; background: #2c3e50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
+                                <i class="fas fa-print"></i> Cetak
+                            </button>
                             <button onclick="event.stopPropagation(); deleteComplaint('${c['no. aduan'] || c.id}')" style="padding: 6px 10px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 11px; font-weight: 600;">
                                 <i class="fas fa-trash"></i> Padam
                             </button>
@@ -866,7 +869,7 @@ document.addEventListener('DOMContentLoaded', () => {
             document.getElementById('display-phone').textContent = complaint.phone || '-';
             document.getElementById('display-email').textContent = complaint.email || '-';
             document.getElementById('display-location').textContent = complaint.location || '-';
-            document.getElementById('display-date').textContent = `${complaint.date || ''} ${complaint.time || ''}`;
+            document.getElementById('display-date').textContent = formatDisplayDate(`${complaint.date || ''} ${complaint.time || ''}`);
             document.getElementById('display-desc').textContent = complaint.description || 'Tiada keterangan.';
 
             // Handle Image Display (Support Multiple)
@@ -880,8 +883,15 @@ document.addEventListener('DOMContentLoaded', () => {
             if (complaint.image) {
                 if (noImgText) noImgText.style.display = 'none';
 
-                // image could be a string (legacy) or an array
-                const imageList = Array.isArray(complaint.image) ? complaint.image : [complaint.image];
+                // image could be a string (legacy), a JSON string (Sheets), or an array
+                let imageList = [];
+                if (Array.isArray(complaint.image)) {
+                    imageList = complaint.image;
+                } else if (typeof complaint.image === 'string' && complaint.image.trim().startsWith('[')) {
+                    try { imageList = JSON.parse(complaint.image); } catch (e) { imageList = [complaint.image]; }
+                } else {
+                    imageList = [complaint.image];
+                }
 
                 imageList.forEach(src => {
                     const img = document.createElement('img');
@@ -891,6 +901,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     img.style.borderRadius = '4px';
                     img.style.border = '1px solid #ddd';
                     img.style.cursor = 'pointer';
+                    img.onerror = () => { img.src = 'https://placehold.co/150x150?text=Error'; };
                     img.onclick = () => window.open(src, '_blank');
                     galleryContainer.appendChild(img);
                 });
@@ -1030,6 +1041,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 console.error("Delete Aduan Error:", e);
                 alert("Ralat memadam aduan: " + e.message);
             }
+        }
+    };
+
+    window.printComplaint = function (id) {
+        const complaints = window.allComplaints || [];
+        const complaint = complaints.find(c => (c.id || c['no. aduan']) == id);
+
+        if (complaint) {
+            // Save to local storage for the print page to read
+            localStorage.setItem('printData', JSON.stringify(complaint));
+            // Open print window
+            window.open('print.html', '_blank');
+        } else {
+            alert("Ralat: Data aduan tidak dijumpai.");
         }
     };
 
@@ -2275,11 +2300,22 @@ window.viewProgress = async function (id) {
                         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
             `;
 
-            if (data && data.images && Array.isArray(data.images) && data.images.length > 0) {
-                data.images.forEach(src => {
+            let imageList = [];
+            if (data && data.images) {
+                if (Array.isArray(data.images)) {
+                    imageList = data.images;
+                } else if (typeof data.images === 'string' && data.images.trim().startsWith('[')) {
+                    try { imageList = JSON.parse(data.images); } catch (e) { imageList = [data.images]; }
+                } else if (typeof data.images === 'string' && data.images.trim() !== '') {
+                    imageList = [data.images];
+                }
+            }
+
+            if (imageList.length > 0) {
+                imageList.forEach(src => {
                     sectionHtml += `
                         <div style="width: 120px; height: 120px; border: 1px solid #eee; border-radius: 4px; overflow: hidden; background: #eee;">
-                            <img src="${src}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="window.open('${src}', '_blank')">
+                            <img src="${src}" style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" onclick="window.open('${src}', '_blank')" onerror="this.src='https://placehold.co/100x100?text=Error'">
                         </div>
                     `;
                 });
@@ -2443,7 +2479,8 @@ window.verifyTask = async function (id) {
             userName: currentComplaint['nama'] || currentComplaint.name,
             userEmail: currentComplaint['emel'] || currentComplaint.email,
             verifiedDate: new Date(verifiedDate).toLocaleString('ms-MY'),
-            ratingUrl: ratingUrl
+            ratingUrl: ratingUrl,
+            progress: currentComplaint.progress
         });
 
     } catch (err) {
@@ -3488,15 +3525,20 @@ function formatDisplayDate(dateStr) {
     if (!dateStr || dateStr === '-') return '-';
 
     // Handle concatenated ISO strings (e.g., "ISO1 ISO2")
-    if (typeof dateStr === 'string' && dateStr.includes('T') && dateStr.includes(' ')) {
-        const parts = dateStr.split(' ');
+    if (typeof dateStr === 'string' && dateStr.includes('T') && dateStr.trim().includes(' ')) {
+        const parts = dateStr.trim().split(/\s+/);
         if (parts.length >= 2) {
             try {
                 const datePart = new Date(parts[0]);
-                const timePart = new Date(parts[1]);
+                let timePart = new Date(parts[1]);
+
+                // If the second part is just a time (e.g. 1899-12-30), we just want its time
                 if (!isNaN(datePart.getTime()) && !isNaN(timePart.getTime())) {
                     const d = datePart.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const t = timePart.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                    // If datePart is also 1899, it might be just time
+                    if (datePart.getFullYear() === 1899) return t;
                     return `${d}, ${t}`;
                 }
             } catch (e) { }
@@ -3507,13 +3549,25 @@ function formatDisplayDate(dateStr) {
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return dateStr;
 
-        if (dateStr.toString().includes('T') || dateStr.toString().includes('Z') || dateStr.toString().includes(':')) {
+        // If it's the specific Google Sheets "Time" null date
+        if (date.getFullYear() === 1899) {
+            return date.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        // If it looks like an ISO string or has time components, format it fully
+        const ds = dateStr.toString();
+        if (ds.includes('T') || ds.includes('Z') || ds.includes(':') || ds.includes('-')) {
+            // Check if it's just a Date without Time (YYYY-MM-DD)
+            if (ds.length <= 10 && ds.includes('-') && !ds.includes(':')) {
+                return date.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+
             return date.toLocaleString('ms-MY', {
                 day: '2-digit', month: '2-digit', year: 'numeric',
                 hour: '2-digit', minute: '2-digit', hour12: true
             });
         }
-        return dateStr;
+        return ds;
     } catch (e) {
         return dateStr;
     }

@@ -1,5 +1,5 @@
 // REPLACE THIS URL WITH YOUR GOOGLE APPS SCRIPT WEB APP URL
-const API_URL = 'https://script.google.com/macros/s/AKfycbzlmcR6XK3QGWXaCzlV8O7OoBSE_2-2pWBVImmW_AT6tioxA-Pd9a29EYFUl3MQQA39/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxGPqgnra8rFSY1X2vdGfz-oByiO5mgRb5icsESBY_Lu8egixqZ1mepPtOL-7NEco_4/exec';
 
 // --- TOKEN KESELAMATAN (Mesti sama dengan di Google Apps Script) ---
 const AUTH_TOKEN = "https://github.com/Jkr-web/E-aduan-JKR";
@@ -172,8 +172,9 @@ const API = {
 
     /**
      * @param {string} message - Message to send to the Individual Admins
+     * @param {string|string[]} images - Optional image URL or array of image URLs
      */
-    async sendTelegramToAdmin(message) {
+    async sendTelegramToAdmin(message, images = null) {
         if (!TELEGRAM_BOT_TOKEN || TELEGRAM_BOT_TOKEN.includes('YOUR_BOT_TOKEN')) {
             console.warn("Telegram Token belum ditetapkan.");
             return false;
@@ -181,19 +182,14 @@ const API = {
 
         let chatIds = [...TELEGRAM_ADMIN_CHAT_IDS].filter(id => id && !id.includes('YOUR_CHAT_ID'));
 
-        // Ambil data admin dari server untuk dapatkan Chat ID masing-masing
         try {
-            const data = await this.getAll(false); // Ambil data fresh untuk notifikasi
+            const data = await this.getAll(false);
             const admins = data.admins || [];
-
             admins.forEach(admin => {
                 if (admin.telegramId) {
                     const tid = admin.telegramId.toString().trim();
-                    if (tid !== '') {
-                        // Masukkan ke dalam senarai jika belum ada
-                        if (!chatIds.includes(tid)) {
-                            chatIds.push(tid);
-                        }
+                    if (tid !== '' && !chatIds.includes(tid)) {
+                        chatIds.push(tid);
                     }
                 }
             });
@@ -202,20 +198,56 @@ const API = {
         }
 
         if (chatIds.length === 0) {
-            console.warn("Tiada Chat ID Telegram Admin dijumpai untuk dihantar notifikasi.");
+            console.warn("Tiada Chat ID Telegram Admin dijumpai.");
             return false;
         }
 
+        const imageList = Array.isArray(images) ? images : (images ? [images] : []);
         let allSuccess = true;
 
         for (const chatId of chatIds) {
             try {
-                const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
-                const payload = {
-                    chat_id: chatId.toString().trim(),
-                    text: message,
-                    parse_mode: 'Markdown'
-                };
+                let url, payload;
+
+                if (imageList.length > 0) {
+                    if (imageList.length === 1) {
+                        url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`;
+                        payload = {
+                            chat_id: chatId.toString().trim(),
+                            photo: imageList[0],
+                            caption: message,
+                            parse_mode: 'Markdown'
+                        };
+                    } else {
+                        // Limit to 10 images for Telegram Media Group
+                        const limitedImages = imageList.slice(0, 10);
+                        url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMediaGroup`;
+                        payload = {
+                            chat_id: chatId.toString().trim(),
+                            media: limitedImages.map((img, idx) => ({
+                                type: 'photo',
+                                media: img,
+                                caption: idx === 0 ? message : '',
+                                parse_mode: idx === 0 ? 'Markdown' : ''
+                            }))
+                        };
+                        // Also send message as text if it's too long for caption (Telegram caption limit is 1024)
+                        if (message.length > 1000) {
+                            await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ chat_id: chatId.toString().trim(), text: message, parse_mode: 'Markdown' })
+                            });
+                        }
+                    }
+                } else {
+                    url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+                    payload = {
+                        chat_id: chatId.toString().trim(),
+                        text: message,
+                        parse_mode: 'Markdown'
+                    };
+                }
 
                 const res = await fetch(url, {
                     method: 'POST',
@@ -224,7 +256,8 @@ const API = {
                 });
 
                 if (!res.ok) {
-                    console.error(`Gagal hantar Telegram ke Chat ID: ${chatId}`);
+                    const errText = await res.text();
+                    console.error(`Gagal hantar Telegram ke Chat ID: ${chatId}. Res: ${errText}`);
                     allSuccess = false;
                 }
             } catch (error) {
@@ -435,24 +468,25 @@ const normalizeData = (data) => {
                 if (k === 'telegramid' || k === 'telegram id' || k === 'telegram_id') jsKey = 'telegramId';
 
                 let val = item[key];
+
+                // Automatically Parse JSON Strings (for 'image', 'progress', 'assignedBy', etc.)
+                if (typeof val === 'string' && (val.trim().startsWith('[') || val.trim().startsWith('{'))) {
+                    try {
+                        val = JSON.parse(val);
+                    } catch (e) {
+                        console.warn(`Failed to parse JSON for key ${key}:`, e);
+                    }
+                }
+
                 // Normalize dates for HTML date inputs (YYYY-MM-DD)
                 if (jsKey === 'startDate' || jsKey === 'endDate') {
-                    if (val) {
+                    if (val && typeof val === 'string' && !val.startsWith('[')) { // Skip if somehow it was a JSON array
                         try {
                             const d = new Date(val);
                             if (!isNaN(d.getTime())) {
                                 val = d.toISOString().split('T')[0];
                             }
                         } catch (e) { }
-                    }
-                }
-
-                // Handle stringified objects from Sheets (Check both forms due to mapping)
-                if ((jsKey === 'assignedBy' || jsKey === 'assignedby') && typeof val === 'string' && val.trim().startsWith('{')) {
-                    try {
-                        val = JSON.parse(val);
-                    } catch (e) {
-                        console.warn('Failed to parse assignedBy JSON:', e);
                     }
                 }
 

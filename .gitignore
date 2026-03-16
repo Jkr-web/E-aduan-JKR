@@ -16,3 +16,7 @@ package.json
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
+# Google Apps Script
+*.gs
+google_script.gs

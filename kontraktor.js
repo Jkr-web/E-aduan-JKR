@@ -883,28 +883,37 @@ window.openUpdateModal = async function (id) {
 
             // --- POPULATE OFFICER INFO ---
             const officerContainer = document.getElementById('modal-officer-container');
-            if (complaint.assignedBy) {
+            if (officerContainer) {
                 officerContainer.style.display = 'block';
-                document.getElementById('modal-officer-name').textContent = complaint.assignedBy.name || '-';
-                document.getElementById('modal-officer-position').textContent = complaint.assignedBy.position || '-';
-                document.getElementById('modal-officer-phone').textContent = complaint.assignedBy.phone || '-';
-                document.getElementById('modal-officer-email').textContent = complaint.assignedBy.email || '-';
+
+                if (complaint.assignedBy) {
+                    document.getElementById('modal-officer-name').textContent = complaint.assignedBy.name || '-';
+                    document.getElementById('modal-officer-position').textContent = complaint.assignedBy.position || '-';
+                    document.getElementById('modal-officer-phone').textContent = complaint.assignedBy.phone || '-';
+                    document.getElementById('modal-officer-email').textContent = complaint.assignedBy.email || '-';
+                } else {
+                    document.getElementById('modal-officer-name').textContent = 'Admin JKR';
+                    document.getElementById('modal-officer-position').textContent = '-';
+                    document.getElementById('modal-officer-phone').textContent = '-';
+                    document.getElementById('modal-officer-email').textContent = '-';
+                }
 
                 const assignedDateEl = document.getElementById('modal-assigned-date');
-                if (assignedDateEl) assignedDateEl.textContent = complaint.assignedDate || '-';
-            } else {
-                const assignedDateEl = document.getElementById('modal-assigned-date');
-                if (assignedDateEl) assignedDateEl.textContent = formatDisplayDate(complaint['tarikh lantikan'] || complaint.assignedDate);
-                officerContainer.style.display = 'block'; // Show anyway if we have assignedDate
-                if (!complaint.assignedBy) {
-                    document.getElementById('modal-officer-name').textContent = 'Admin JKR';
+                if (assignedDateEl) {
+                    assignedDateEl.textContent = formatDisplayDate(complaint.assignedDate || complaint['tarikh lantikan']);
                 }
             }
 
-            // Initialize Manual Completion Date/Time
+            // Initialize Manual Completion Date/Time (Use Local Time)
             const now = new Date();
-            document.getElementById('complete-date-manual').value = now.toISOString().split('T')[0];
-            document.getElementById('complete-time-manual').value = now.toTimeString().split(' ')[0].substring(0, 5);
+            const year = now.getFullYear();
+            const month = String(now.getMonth() + 1).padStart(2, '0');
+            const day = String(now.getDate()).padStart(2, '0');
+            const localDate = `${year}-${month}-${day}`;
+            const localTime = now.toTimeString().split(' ')[0].substring(0, 5); // HH:MM
+
+            document.getElementById('complete-date-manual').value = localDate;
+            document.getElementById('complete-time-manual').value = localTime;
 
             // --- POPULATE PROGRESS FIELDS ---
             const progress = complaint.progress || {};
@@ -1133,7 +1142,12 @@ window.submitProgress = async function (action) {
             }
 
             if (action === 'clock-in') {
-                complaint['tarikh terima'] = new Date().toISOString();
+                const now = new Date();
+                const y = now.getFullYear();
+                const m = String(now.getMonth() + 1).padStart(2, '0');
+                const d = String(now.getDate()).padStart(2, '0');
+                const t = now.toTimeString().split(' ')[0].substring(0, 5);
+                complaint['tarikh terima'] = `${y}-${m}-${d} ${t}`;
             }
 
             if (action === 'complete') {
@@ -1153,9 +1167,11 @@ window.submitProgress = async function (action) {
                     complaint['tarikh siap'] = `${manualDate} ${manualTime}`;
                 } else {
                     const now = new Date();
-                    const d = now.toLocaleDateString('en-CA');
-                    const t = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
-                    complaint['tarikh siap'] = `${d} ${t}`;
+                    const y = now.getFullYear();
+                    const m = String(now.getMonth() + 1).padStart(2, '0');
+                    const d = String(now.getDate()).padStart(2, '0');
+                    const t = now.toTimeString().split(' ')[0].substring(0, 5);
+                    complaint['tarikh siap'] = `${y}-${m}-${d} ${t}`;
                 }
 
                 // Recalculate duration
@@ -1165,18 +1181,27 @@ window.submitProgress = async function (action) {
                 if (startTimeStr && endTimeStr) {
                     const start = new Date(startTimeStr);
                     const end = new Date(endTimeStr);
-                    const diffMs = end - start;
-                    const diffHours = diffMs / (1000 * 60 * 60);
 
-                    if (diffHours < 24) {
-                        const hours = Math.floor(diffHours);
-                        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-                        complaint['tempoh siap'] = `${hours} Jam ${minutes} Minit`;
-                    } else {
-                        const days = Math.floor(diffHours / 24);
-                        const remainingHours = Math.floor(diffHours % 24);
-                        complaint['tempoh siap'] = `${days} Hari ${remainingHours} Jam`;
+                    // Use absolute difference to prevent negative values
+                    let diffMs = Math.abs(end - start);
+
+                    const totalMinutes = Math.floor(diffMs / (1000 * 60));
+                    const totalHours = Math.floor(totalMinutes / 60);
+                    const days = Math.floor(totalHours / 24);
+
+                    const remainingHours = totalHours % 24;
+                    const remainingMinutes = totalMinutes % 60;
+
+                    let durationStr = "";
+                    if (days > 0) {
+                        durationStr += `${days} Hari `;
                     }
+                    if (remainingHours > 0 || days > 0) {
+                        durationStr += `${remainingHours} Jam `;
+                    }
+                    durationStr += `${remainingMinutes} Minit`;
+
+                    complaint['tempoh siap'] = durationStr.trim();
                 }
             }
 
@@ -1197,17 +1222,21 @@ window.submitProgress = async function (action) {
 
                 // NOTIFICATIONS (Non-blocking / Background)
                 if (action === 'clock-in') {
-                    // Notify Admin & User without awaiting to speed up UI
+                    // Images for clock-in (current task images)
+                    const currentBeforeImages = progress.before ? progress.before.images : [];
+
                     API.sendNotification('clock_in', {
                         complaintId: id,
-                        contractorName: complaint['kontraktor dilantik'] || complaint.contractor
+                        contractorName: complaint['kontraktor dilantik'] || complaint.contractor,
+                        images: currentBeforeImages
                     });
                     API.sendNotification('status_update', {
                         complaintId: id,
                         userName: complaint['nama'] || complaint.name,
                         userEmail: complaint['emel'] || complaint.email,
                         newStatus: 'Sedang Dibaiki Oleh Kontraktor',
-                        updateBy: complaint['kontraktor dilantik'] || complaint.contractor
+                        updateBy: complaint['kontraktor dilantik'] || complaint.contractor,
+                        progress: progress
                     });
 
                     // Send Telegram Alert to Admin (Modal Clock-In)
@@ -1218,30 +1247,35 @@ window.submitProgress = async function (action) {
                         const dtS = now.toLocaleString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
                         const loginLink = "https://jkr-web.github.io/E-aduan-JKR/index.html";
                         const telegramMsg = `🛠️ *KONTRAKTOR MULA KERJA (Clock-In)*\n\n*ID Aduan:* ${id}\n*Kontraktor:* ${contractorName}\n*Masa:* ${dtS}\n*Lokasi:* ${location}\n\nKontraktor Kini Akan Memulakan Kerja.\n\n👉 [Pautan Pantas Admin](${loginLink})`;
-                        API.sendTelegramToAdmin(telegramMsg);
+                        API.sendTelegramToAdmin(telegramMsg, currentBeforeImages);
                     } catch (tErr) {
                         console.warn("Gagal hantar notifikasi Telegram (Modal Clock-In):", tErr);
                     }
                 } else if (action === 'complete') {
+                    // Images for task completed
+                    const currentAfterImages = progress.after ? progress.after.images : [];
+
                     // 1. Notify User (Status Update)
                     API.sendNotification('status_update', {
                         complaintId: id,
                         userName: complaint['nama'] || complaint.name,
                         userEmail: complaint['emel'] || complaint.email,
                         newStatus: 'Selesai (Menunggu Pengesahan)',
-                        updateBy: complaint['kontraktor dilantik'] || complaint.contractor
+                        updateBy: complaint['kontraktor dilantik'] || complaint.contractor,
+                        progress: progress
                     });
 
                     // 2. Notify Admin (Task Ready for Review)
                     API.sendNotification('task_completed', {
                         complaintId: id,
-                        contractorName: complaint['kontraktor dilantik'] || complaint.contractor
+                        contractorName: complaint['kontraktor dilantik'] || complaint.contractor,
+                        progress: progress
                     });
 
                     // 3. Send Telegram Alert to Admin
                     const loginLink = "https://jkr-web.github.io/E-aduan-JKR/index.html";
                     const telegramMsgComplete = `✅ *TUGASAN SELESAI (Menunggu Pengesahan)*\n\n*Kontraktor:* ${complaint['kontraktor dilantik'] || complaint.contractor}\n*No. Aduan:* ${id}\n*Tempoh Siap:* ${complaint['tempoh siap']}\n\n👉 [Pengesahan Admin](${loginLink})`;
-                    API.sendTelegramToAdmin(telegramMsgComplete);
+                    API.sendTelegramToAdmin(telegramMsgComplete, currentAfterImages);
                 }
 
                 alert(action === 'complete' ? `Tahniah! Tugasan ${id} telah diselesaikan.` : (action === 'clock-in' ? `Tugasan ${id} telah bermula (Clock-in).` : `Perkembangan tugasan ${id} dikemaskini.`));
@@ -1646,15 +1680,18 @@ function formatDisplayDate(dateStr) {
     if (!dateStr || dateStr === '-') return '-';
 
     // Handle concatenated ISO strings (e.g., "ISO1 ISO2")
-    if (typeof dateStr === 'string' && dateStr.includes('T') && dateStr.includes(' ')) {
-        const parts = dateStr.split(' ');
+    if (typeof dateStr === 'string' && dateStr.includes('T') && dateStr.trim().includes(' ')) {
+        const parts = dateStr.trim().split(/\s+/);
         if (parts.length >= 2) {
             try {
                 const datePart = new Date(parts[0]);
-                const timePart = new Date(parts[1]);
+                let timePart = new Date(parts[1]);
+
                 if (!isNaN(datePart.getTime()) && !isNaN(timePart.getTime())) {
                     const d = datePart.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
                     const t = timePart.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                    if (datePart.getFullYear() === 1899) return t;
                     return `${d}, ${t}`;
                 }
             } catch (e) { }
@@ -1665,13 +1702,23 @@ function formatDisplayDate(dateStr) {
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return dateStr;
 
-        if (dateStr.toString().includes('T') || dateStr.toString().includes('Z') || dateStr.toString().includes(':')) {
+        // Handle 1899 (Sheets time-only)
+        if (date.getFullYear() === 1899) {
+            return date.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+        }
+
+        const ds = dateStr.toString();
+        if (ds.includes('T') || ds.includes('Z') || ds.includes(':') || ds.includes('-')) {
+            if (ds.length <= 10 && ds.includes('-') && !ds.includes(':')) {
+                return date.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            }
+
             return date.toLocaleString('ms-MY', {
                 day: '2-digit', month: '2-digit', year: 'numeric',
                 hour: '2-digit', minute: '2-digit', hour12: true
             });
         }
-        return dateStr;
+        return ds;
     } catch (e) {
         return dateStr;
     }

@@ -343,13 +343,14 @@ window.renderComplaintForm = function (containerId) {
                         complaintId: newId,
                         name: newComplaint["nama"],
                         location: newComplaint["lokasi kerosakan"],
-                        description: newComplaint["keterangan aduan"]
+                        description: newComplaint["keterangan aduan"],
+                        images: imageLinks
                     });
 
                     // Send Telegram Alert to Admin Group
                     const loginLink = "https://jkr-web.github.io/E-aduan-JKR/index.html";
                     const telegramMsg = `🚨 *ADUAN BARU DITERIMA*\n\n*ID Aduan:* ${newId}\n*Pengadu:* ${newComplaint["nama"]}\n*No. Tel:* ${newComplaint["no. telefon"].replace(/'/g, '')}\n*Lokasi:* ${newComplaint["lokasi kerosakan"]}\n*Kerosakan:* ${newComplaint["keterangan aduan"]}\n\n👉 [Log Masuk Admin](${loginLink})`;
-                    API.sendTelegramToAdmin(telegramMsg);
+                    API.sendTelegramToAdmin(telegramMsg, imageLinks);
 
                     // Hide overlay if it was shown
                     if (hasFiles && overlay) {
@@ -453,7 +454,12 @@ window.renderComplaintForm = function (containerId) {
         if (timestamp) timestamp.value = new Date().toISOString();
 
         const rNow = new Date();
-        if (dateInput) dateInput.value = rNow.toISOString().split('T')[0];
+        const year = rNow.getFullYear();
+        const month = String(rNow.getMonth() + 1).padStart(2, '0');
+        const day = String(rNow.getDate()).padStart(2, '0');
+        const localDateStr = `${year}-${month}-${day}`;
+
+        if (dateInput) dateInput.value = localDateStr;
         if (timeInput) timeInput.value = rNow.toTimeString().split(' ')[0].substring(0, 5);
     }
 

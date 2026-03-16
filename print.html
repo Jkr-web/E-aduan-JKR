@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="ms">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cetak Aduan - Sistem Aduan JKR</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #2c3e50;
+            --secondary-color: #34495e;
+            --accent-color: #3498db;
+            --border-color: #ddd;
+            --text-color: #333;
+        }
+
+        /* --- Animations --- */
+        @keyframes fadeInSlideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+
+            to {
+                opacity: 1;
+            }
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: white;
+            margin: 0;
+            padding: 0;
+            color: #000;
+            line-height: 1.4;
+            font-size: 0.85rem;
+        }
+
+        .print-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            position: relative;
+        }
+
+        @media print {
+            body {
+                background: white;
+            }
+
+            .print-container {
+                margin: 0;
+                padding: 20px;
+                box-shadow: none;
+                max-width: 100%;
+                animation: none !important;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+
+        .header {
+            display: flex;
+            align-items: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .logo-container:hover {
+            transform: rotate(5deg) scale(1.1);
+        }
+
+        .logo-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+
+        .header-text {
+            flex: 1;
+        }
+
+        .header-text h1 {
+            margin: 0;
+            font-size: 1.5rem;
+            color: var(--primary-color);
+            text-transform: uppercase;
+            font-weight: 800;
+        }
+
+        .header-text h2 {
+            margin: 5px 0 0;
+            font-size: 1.2rem;
+            color: var(--secondary-color);
+            font-weight: 800;
+        }
+
+        .header-text p {
+            margin: 5px 0 0;
+            font-size: 0.85rem;
+            color: #666;
+        }
+
+        .form-title {
+            text-align: center;
+            text-decoration: underline;
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #000;
+        }
+
+        .section-title {
+            background-color: #eee;
+            padding: 6px 10px;
+            font-weight: 800;
+            border-left: 5px solid #000;
+            margin: 12px 0 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.9rem;
+            color: #000;
+        }
+
+        /* Flow Separator Styles */
+        .flow-divider {
+            margin: 20px 0 10px 0;
+            text-align: center;
+            position: relative;
+            color: #95a5a6;
+            font-weight: 700;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .flow-divider::before {
+            content: "--------------------------------------------------------------------------------";
+            display: block;
+            letter-spacing: -2px;
+            opacity: 0.3;
+            margin-bottom: 5px;
+        }
+
+        .flow-divider::after {
+            content: "--------------------------------------------------------------------------------";
+            display: block;
+            letter-spacing: -2px;
+            opacity: 0.3;
+            margin-top: 5px;
+        }
+
+        /* Staggered section animations */
+        .section-title:nth-of-type(1) {
+            animation-delay: 0.3s;
+        }
+
+        .section-title:nth-of-type(2) {
+            animation-delay: 0.4s;
+        }
+
+        .section-title:nth-of-type(3) {
+            animation-delay: 0.5s;
+        }
+
+        .section-title:nth-of-type(4) {
+            animation-delay: 0.6s;
+        }
+
+        .section-title:nth-of-type(5) {
+            animation-delay: 0.7s;
+        }
+
+        .section-title:nth-of-type(6) {
+            animation-delay: 0.8s;
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 5px;
+            animation: fadeIn 1s ease-out 0.4s both;
+        }
+
+        .data-item {
+            display: flex;
+            border-bottom: 1px dashed var(--border-color);
+            padding: 8px 0;
+            transition: background-color 0.3s ease;
+        }
+
+        .data-item:hover {
+            background-color: rgba(52, 152, 219, 0.05);
+        }
+
+        .label {
+            font-size: 0.75rem;
+            font-weight: 700;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            width: 140px;
+            /* Keep original width */
+        }
+
+        .value {
+            flex: 1;
+            font-size: 0.85rem;
+            font-weight: 500;
+            color: #000;
+        }
+
+        .full-width {
+            grid-column: span 2;
+        }
+
+        .description-box {
+            padding: 10px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: #fff;
+            white-space: pre-wrap;
+            animation: fadeIn 1s ease-out 0.5s both;
+            font-size: 0.85rem;
+            min-height: 40px;
+        }
+
+        .photo-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .photo-item {
+            flex: 0 0 calc(33.33% - 7px);
+            border: 1px solid var(--border-color);
+            height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #f9f9f9;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .photo-item img {
+            max-width: 100%;
+            max-height: 100%;
+            width: auto;
+            height: auto;
+            object-fit: contain;
+            display: block;
+        }
+
+        .photo-label {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            text-align: center;
+            padding: 4px 0;
+            font-size: 0.7rem;
+            font-weight: 700;
+        }
+
+        .photo-notes {
+            margin-top: 10px;
+            padding: 10px 15px;
+            background-color: #fcfcfc;
+            border-left: 3px solid #eee;
+            font-size: 0.85rem;
+            color: #555;
+            font-style: italic;
+            animation: fadeIn 1s ease-out 0.6s both;
+        }
+
+
+        .photo-placeholder {
+            color: #ccc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: color 0.3s ease;
+        }
+
+        .photo-item:hover .photo-placeholder {
+            color: var(--accent-color);
+        }
+
+        .photo-placeholder i {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .signature-section {
+            display: flex;
+            justify-content: space-between;
+            gap: 40px;
+            margin-top: 40px;
+            text-align: center;
+            animation: fadeIn 1s ease-out 0.9s both;
+        }
+
+        .sig-box {
+            padding-top: 20px;
+            font-size: 0.85rem;
+        }
+
+        .sig-box:hover {
+            transform: translateY(-5px);
+        }
+
+        .sig-name {
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .sig-label {
+            font-style: italic;
+            color: #666;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        .footer-info {
+            margin-top: 30px;
+            padding-top: 15px;
+            border-top: 1px solid var(--border-color);
+            font-size: 0.8rem;
+            color: #777;
+            text-align: center;
+            animation: fadeIn 1s ease-out 1s both;
+            line-height: 1.6;
+        }
+
+        #print-timestamp {
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        /* Controls Section Animations */
+        .controls {
+            position: fixed;
+            top: 25px;
+            right: 25px;
+            display: flex;
+            gap: 15px;
+            z-index: 1000;
+            animation: fadeInSlideUp 0.8s ease-out;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.85rem;
+        }
+
+        .btn:hover {
+            transform: translateY(-5px) scale(1.05);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.25);
+        }
+
+        .btn:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        .btn-print {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+
+        .btn-print:hover {
+            animation: pulse 1.5s infinite;
+        }
+
+        .btn-back {
+            background: linear-gradient(135deg, #2c3e50, #34495e);
+            color: white;
+        }
+
+        /* --- Responsiveness for Screen --- */
+        @media screen and (max-width: 768px) {
+            .data-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .photo-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .print-container {
+                padding: 20px;
+                width: 98%;
+                margin: 10px auto;
+            }
+
+            .header {
+                text-align: left;
+            }
+
+            .logo-container {
+                width: 70px;
+                height: 70px;
+                margin-right: 15px;
+            }
+
+            .header-text h1 {
+                font-size: 1.1rem;
+            }
+
+            .header-text h2 {
+                font-size: 0.9rem;
+            }
+
+            .controls {
+                position: static;
+                justify-content: center;
+                margin-bottom: 20px;
+                padding: 20px;
+            }
+        }
+
+        .controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .btn-print {
+            background-color: #27ae60;
+            color: white;
+        }
+
+        .btn-back {
+            background-color: #34495e;
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="controls no-print">
+        <button class="btn btn-back" onclick="window.close()"><i class="fas fa-arrow-left"></i> Kembali</button>
+        <button class="btn btn-print" onclick="window.print()"><i class="fas fa-print"></i> Cetak Sekarang</button>
+    </div>
+
+    <div class="print-container">
+        <div class="header">
+            <div class="logo-container">
+                <img id="print-logo" src="logo-jkr-sabah.png" alt="Logo JKR Sabah"
+                    onerror="this.src='https://upload.wikimedia.org/wikipedia/commons/thumb/c/c4/Logo_JKR.png/600px-Logo_JKR.png'">
+            </div>
+            <div class="header-text">
+                <h1 id="sys-name">SISTEM ADUAN KEROSAKAN</h1>
+                <h2 id="sys-subtitle">JABATAN KERJA RAYA</h2>
+                <p id="sys-address">Cawangan Selenggara Bangunan.</p>
+            </div>
+        </div>
+
+        <div class="form-title">SLIP ARAHAN KERJA & LAPORAN SIAP KERJA</div>
+
+        <!-- 1. BAHAGIAN ADUAN PENGADU -->
+        <div class="flow-divider">BAHAGIAN ADUAN PENGADU</div>
+
+        <div class="section-title">
+            <span>BUTIRAN ADUAN</span>
+            <span id="print-id" style="color: var(--accent-color);">#ADUAN-000</span>
+        </div>
+
+        <div class="data-grid">
+            <div class="data-item">
+                <div class="label">NAMA PENGADU:</div>
+                <div class="value" id="val-nama">-</div>
+            </div>
+            <div class="data-item">
+                <div class="label">TARIKH ADUAN:</div>
+                <div class="value" id="val-tarikh">-</div>
+            </div>
+            <div class="data-item">
+                <div class="label">NO. TELEFON:</div>
+                <div class="value" id="val-phone">-</div>
+            </div>
+            <div class="data-item">
+                <div class="label">JABATAN:</div>
+                <div class="value" id="val-dept">-</div>
+            </div>
+            <div class="data-item full-width">
+                <div class="label">LOKASI KEROSAKAN:</div>
+                <div class="value" id="val-damage">-</div>
+            </div>
+        </div>
+
+        <div class="section-title">KETERANGAN KEROSAKAN</div>
+        <div class="description-box" id="val-desc">-</div>
+
+        <div class="section-title">GAMBAR ADUAN (PENGADU)</div>
+        <div id="photo-reporter">
+            <div class="photo-grid">
+                <div class="photo-item">
+                    <div class="photo-placeholder"><i class="fas fa-image"></i><span>Tiada Imej Aduan</span></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. BAHAGIAN ADMIN -->
+        <div class="flow-divider">BAHAGIAN ADMIN</div>
+
+        <div class="section-title">ARAHAN KEPADA KONTRAKTOR</div>
+        <div class="data-grid">
+            <div class="data-item">
+                <div class="label">SYARIKAT DILANTIK:</div>
+                <div class="value" id="val-contractor">-</div>
+            </div>
+            <div class="data-item">
+                <div class="label">NO. RUJUKAN:</div>
+                <div class="value" id="val-ref">-</div>
+            </div>
+            <div class="data-item">
+                <div class="label">TARIKH LANTIKAN:</div>
+                <div class="value" id="val-assigned">-</div>
+            </div>
+            <div class="data-item">
+                <div class="label">STATUS SEMASA:</div>
+                <div class="value"><span id="val-status" class="status-badge" style="background:#f39c12;">DALAM
+                        PROSES</span></div>
+            </div>
+        </div>
+        <div class="description-box" id="val-admin-notes" style="margin-top:10px;">-</div>
+
+        <!-- 3. BAHAGIAN KONTRAKTOR -->
+        <div class="flow-divider">BAHAGIAN KONTRAKTOR</div>
+
+        <div class="section-title">LAPORAN SIAP KERJA</div>
+        <div class="data-grid">
+            <div class="data-item">
+                <div class="label">TARIKH MULA:</div>
+                <div class="value" id="val-start">-</div>
+            </div>
+            <div class="data-item">
+                <div class="label">TARIKH SIAP:</div>
+                <div class="value" id="val-end">-</div>
+            </div>
+            <div class="data-item">
+                <div class="label">JUMLAH MASA (JAM/MINIT):</div>
+                <div class="value" id="val-duration" style="font-weight: bold; color: var(--primary-color);">-</div>
+            </div>
+            <div class="data-item full-width">
+                <div class="label">CATATAN KONTRAKTOR:</div>
+                <div class="value" id="val-con-notes">-</div>
+            </div>
+        </div>
+
+        <!-- 4. GAMBAR AKTIVITI KONTRAKTOR -->
+        <div class="flow-divider">GAMBAR AKTIVITI KONTRAKTOR</div>
+
+        <div class="section-title">GAMBAR SEBELUM KERJA (KONTRAKTOR)</div>
+        <div id="photo-before">
+            <div class="photo-grid">
+                <div class="photo-item">
+                    <div class="photo-placeholder"><i class="fas fa-image"></i><span>Tiada Imej</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">GAMBAR SEMASA (DALAM PROSES)</div>
+        <div id="photo-during">
+            <div class="photo-grid">
+                <div class="photo-item">
+                    <div class="photo-placeholder"><i class="fas fa-image"></i><span>Tiada Imej Semasa</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="section-title">GAMBAR SELEPAS (SIAP)</div>
+        <div id="photo-after">
+            <div class="photo-grid">
+                <div class="photo-item">
+                    <div class="photo-placeholder"><i class="fas fa-image"></i><span>Tiada Imej Selepas</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flow-divider">PENGESAHAN & TANDATANGAN</div>
+        <div class="signature-section">
+            <div class="sig-box">
+                <div class="sig-name" id="sig-kontraktor">(................................................)</div>
+                <div class="sig-label">Tandatangan Kontraktor</div>
+                <div id="sig-kontraktor-name">Wakil Syarikat: </div>
+                <div id="sig-kontraktor-date">Tarikh: </div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-name" id="sig-admin">(................................................)</div>
+                <div class="sig-label">Disahkan Oleh Pegawai JKR</div>
+                <div id="sig-admin-name">Nama: </div>
+                <div id="sig-admin-date">Tarikh: </div>
+            </div>
+        </div>
+
+        <div class="footer-info">
+            Penafian: Dokumen ini dijana secara automatik oleh Sistem Aduan Kerosakan JKR.
+            <br>
+            Tarikh Cetakan: <span id="print-timestamp"></span>
+        </div>
+    </div>
+
+    <script>
+        /**
+         * HELPER: Format Date and Time for display (Robust version)
+         */
+        function formatDisplayDate(dateStr) {
+            if (!dateStr || dateStr === '-') return '-';
+
+            // Handle concatenated ISO strings (e.g., "ISO1 ISO2")
+            if (typeof dateStr === 'string' && dateStr.includes('T') && dateStr.trim().includes(' ')) {
+                const parts = dateStr.trim().split(/\s+/);
+                if (parts.length >= 2) {
+                    try {
+                        const datePart = new Date(parts[0]);
+                        let timePart = new Date(parts[1]);
+
+                        if (!isNaN(datePart.getTime()) && !isNaN(timePart.getTime())) {
+                            const d = datePart.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                            const t = timePart.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+                            if (datePart.getFullYear() === 1899) return t;
+                            return `${d}, ${t}`;
+                        }
+                    } catch (e) { }
+                }
+            }
+
+            try {
+                const date = new Date(dateStr);
+                if (isNaN(date.getTime())) return dateStr;
+
+                // Handle 1899 (Sheets time-only)
+                if (date.getFullYear() === 1899) {
+                    return date.toLocaleTimeString('ms-MY', { hour: '2-digit', minute: '2-digit', hour12: true });
+                }
+
+                const ds = dateStr.toString();
+                if (ds.includes('T') || ds.includes('Z') || ds.includes(':') || ds.includes('-')) {
+                    if (ds.length <= 10 && ds.includes('-') && !ds.includes(':')) {
+                        return date.toLocaleDateString('ms-MY', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                    }
+                    return date.toLocaleString('ms-MY', {
+                        day: '2-digit', month: '2-digit', year: 'numeric',
+                        hour: '2-digit', minute: '2-digit', hour12: true
+                    });
+                }
+                return ds;
+            } catch (e) {
+                return dateStr;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get data from localStorage
+            const data = JSON.parse(localStorage.getItem('printData') || '{}');
+            const settings = JSON.parse(localStorage.getItem('appSettings') || '{}');
+
+            if (!data.id) {
+                alert('Tiada data aduan dijumpai untuk dicetak.');
+                window.close();
+                return;
+            }
+
+            // Populate Settings
+            document.getElementById('sys-name').textContent = localStorage.getItem('systemName') || 'SISTEM ADUAN KEROSAKAN';
+
+            const logo = localStorage.getItem('appLogo');
+            if (logo) {
+                document.getElementById('print-logo').src = logo;
+            }
+
+            // Populate Data
+            document.getElementById('print-id').textContent = '#' + (data['no. aduan'] || data.id);
+            document.getElementById('val-nama').textContent = data.nama || data.name || '-';
+            document.getElementById('val-tarikh').textContent = formatDisplayDate(data['tarikh aduan'] || data.date || '-');
+            document.getElementById('val-phone').textContent = data['no. telefon'] || data.phone || '-';
+            document.getElementById('val-dept').textContent = data.jabatan || data.dept || '-';
+            document.getElementById('val-damage').textContent = data['lokasi kerosakan'] || data.location || '-';
+            document.getElementById('val-desc').textContent = data['keterangan aduan'] || data.description || '-';
+
+            document.getElementById('val-contractor').textContent = data['kontraktor dilantik'] || data.contractor || 'BELUM DILANTIK';
+            document.getElementById('val-ref').textContent = data['no. rujukan kontraktor'] || data.contractorRefNo || '-';
+            document.getElementById('val-assigned').textContent = formatDisplayDate(data['tarikh lantikan'] || data.assignedDate || '-');
+
+            const status = data.status || 'Baru';
+            const statusEl = document.getElementById('val-status');
+            statusEl.textContent = status.toUpperCase();
+
+            // Status colors
+            const colors = {
+                'Selesai': '#27ae60',
+                'Baru': '#3498db',
+                'Tindakan Kontraktor': '#9b59b6',
+                'Ditolak': '#e74c3c'
+            };
+            statusEl.style.backgroundColor = colors[status] || '#f39c12';
+
+            document.getElementById('val-admin-notes').textContent = data['catatan admin'] || data.adminNotes || 'Tiada catatan.';
+
+            document.getElementById('val-start').textContent = formatDisplayDate(data['tarikh terima'] || data.dateReceived || '-');
+            document.getElementById('val-end').textContent = formatDisplayDate(data['tarikh siap'] || data.dateCompleted || '-');
+            document.getElementById('val-duration').textContent = data['tempoh siap'] || data.duration || '-';
+            document.getElementById('val-con-notes').textContent = data['catatan kontraktor'] || data.contractorNotes || '-';
+
+            // Population for Signatures
+            const populateSignatures = () => {
+                const contractorName = data['kontraktor dilantik'] || data.contractor || '';
+                document.getElementById('sig-kontraktor-name').textContent = 'Wakil Syarikat: ' + contractorName;
+
+                let adminName = '';
+                let assignedBy = data.assignedBy;
+
+                if (typeof assignedBy === 'string' && assignedBy.trim().startsWith('{')) {
+                    try { assignedBy = JSON.parse(assignedBy); } catch (e) { }
+                }
+
+                if (assignedBy && assignedBy.name) {
+                    adminName = assignedBy.name;
+                } else {
+                    // Fallback to name of person who verified or just 'Admin'
+                    adminName = data.verifiedBy || 'Pegawai JKR';
+                }
+                document.getElementById('sig-admin-name').textContent = 'Nama: ' + adminName;
+
+                // Dates
+                const contractorDate = data['tarikh siap'] || data.dateCompleted || '';
+                const adminDate = data.verifiedDate || data.verifieddate || '';
+
+                if (contractorDate) document.getElementById('sig-kontraktor-date').textContent = 'Tarikh: ' + formatDisplayDate(contractorDate);
+                if (adminDate) document.getElementById('sig-admin-date').textContent = 'Tarikh: ' + formatDisplayDate(adminDate);
+            };
+
+            populateSignatures();
+
+            // Populate Photos
+            const progress = data.progress || {};
+
+            // Dynamic Image Rendering Function (Robust)
+            const renderImages = (containerId, images, labelPrefix, notes) => {
+                const container = document.getElementById(containerId);
+                if (!container) return;
+
+                let html = '';
+                let imageList = [];
+
+                if (images) {
+                    if (Array.isArray(images)) {
+                        imageList = images;
+                    } else if (typeof images === 'string') {
+                        if (images.trim().startsWith('[')) {
+                            try { imageList = JSON.parse(images); } catch (e) { imageList = [images]; }
+                        } else if (images.trim() !== '') {
+                            imageList = [images];
+                        }
+                    }
+                }
+
+                if (imageList.length > 0) {
+                    html = '<div class="photo-grid">';
+                    imageList.forEach((img, idx) => {
+                        html += `
+                            <div class="photo-item">
+                                <img src="${img}" onerror="this.src='https://placehold.co/400x300?text=Imej+Tidak+Ditemui'">
+                                ${labelPrefix ? `<div class="photo-label">${labelPrefix} ${idx + 1}</div>` : ''}
+                            </div>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html = `
+                        <div class="photo-grid">
+                            <div class="photo-item">
+                                <div class="photo-placeholder"><i class="fas fa-image"></i><span>Tiada Imej</span></div>
+                                ${labelPrefix ? `<div class="photo-label">${labelPrefix}</div>` : ''}
+                            </div>
+                        </div>`;
+                }
+
+                if (notes && notes.trim() !== '' && notes !== 'Tiada catatan dimasukkan.') {
+                    html += `<div class="photo-notes"><strong>Catatan:</strong> ${notes}</div>`;
+                }
+
+                container.outerHTML = `<div id="${containerId}-wrapper">${html}</div>`;
+            };
+
+            // Populate all photo sections
+            renderImages('photo-reporter', data.image, '');
+            renderImages('photo-before', progress.before?.images, 'SEBELUM', progress.before?.notes);
+            renderImages('photo-during', progress.during?.images || progress.current?.images, 'SEMASA', progress.during?.notes);
+            renderImages('photo-after', progress.after?.images, 'SELEPAS', progress.after?.notes);
+
+            const now = new Date();
+            const options = { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById('print-timestamp').textContent = now.toLocaleString('ms-MY', options);
+
+            // Auto-trigger print if not debugging
+            // window.print();
+        });
+    </script>
+</body>
+
+</html>
